@@ -372,5 +372,94 @@ class UserService{
         }
     }
 
+    public function passwordChange(string $userId, string $currentPassword, string $newPassword){
+        try{
+
+            $user = $this->userRepository->findUserByID($userId);
+            if($user === null){
+                UtilityHelper::sendJson('error', "User not found, Please login", 429);
+                return;
+            }
+
+            $purpose = 'Change-Password';
+            $requestCount = $this->userRepository->tokenRequestAttempts($userId, $purpose);
+    
+            if ($requestCount >= 3) {
+                UtilityHelper::sendJson('error', 'Maximum token request limit (3 times) reached. Please try again later.', 429);
+                return;
+            }
+
+            if (!UtilityHelper::verifyValue($currentPassword, $user->getPasswordHash())) {
+                UtilityHelper::sendJson('error', 'Current password is incorrect', 400, ['errors' => ['current_password' => 'Incorrect current password']]);
+                return;
+            }
+
+            $token = $this->generateToken();
+            $tokenHash = hash('sha256', $token);
+            $createdAt = new DateTimeImmutable();
+            $expiresAt = new DateTimeImmutable('+5 min');
+            $purpose = 'Change-Password';
+            $email = $user->getEmail();
+            $fullName = $user->getFullName();
+
+            $this->userRepository->saveTokenAttempts($userId, $tokenHash, $purpose, $createdAt);
+            $this->userRepository->saveToken($userId, $email, $tokenHash, $purpose, $createdAt, $expiresAt);
+
+            $_SESSION['pending_new_password_hash'] = UtilityHelper::hashValue($newPassword);
+
+            $this->mailService->token($email, $fullName, $token);
+
+            UtilityHelper::sendJson('success', 'Verification token sent to your email.', 200, ['requires_token' => true]);
+        }catch(Throwable $e){
+            error_log("Error initializing password change: " . $e->getMessage());
+            UtilityHelper::sendJson('error', "An error occurred, please try again", 500);
+        }
+    }
+
+    public function verifyPasswordChange(string $userId, string $token, string $newPassword){
+        try {
+
+            $purpose = 'change-password';
+            $tokenHash = hash('sha256', $token);
+            $record = $this->getValidTokenRecord($tokenHash);
+    
+            if ((string)$record['user_id'] !== (string)$userId) {
+                UtilityHelper::sendJson('error', "Invalid token verification", 401);
+                return;
+            }
+    
+            $user = $this->userRepository->findUserByID($userId);
+            if ($user === null) {
+                UtilityHelper::sendJson('error', "User not found", 404);
+                return;
+            }
+    
+            $newPasswordHash = $_SESSION['pending_new_password_hash'] ?? UtilityHelper::hashValue($newPassword);
+    
+            $user->setPasswordHash($newPasswordHash);
+            $user->setUpdatedAt(new DateTimeImmutable());
+    
+            $updated = $this->userRepository->passwordUpdate($user);
+            if (!$updated) {
+                UtilityHelper::sendJson('error', "Could not update password, please try again", 500);
+                return;
+            }
+
+            $this->mailService->passwordResetSuccess($user->getEmail(), $user->getFullName());
+            $this->userRepository->deleteTokenAttempts($userId, $purpose);
+            $this->userRepository->deleteToken($userId, $purpose);
+
+            unset($_SESSION['pending_new_password_hash'], $_SESSION['user_id']);
+    
+            UtilityHelper::sendJson('success', "Password successfully updated. Please login again.", 200);
+    
+        } catch (Throwable $e) {
+            error_log("Error verifying password change: " . $e->getMessage());
+            UtilityHelper::sendJson('error', "An error occurred verifying token, please try again", 500);
+        }
+
+    }
+
+
 
 }

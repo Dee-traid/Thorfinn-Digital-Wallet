@@ -217,5 +217,78 @@ class UserController{
         }
     }
     
+    private function validateNewPassword(string $newPassword, string $confirmPassword): void {
+        if (!preg_match('/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/', $newPassword)) {
+            UtilityHelper::sendJson('error', 'Password must be at least 8 characters and include a letter and a number', 400, ['errors' => ['new_password' => 'Min 8 chars, with a letter and a number']]);
+        }
+        if ($newPassword !== $confirmPassword) {
+            UtilityHelper::sendJson('error', 'Passwords do not match', 400, ['errors' => ['confirm_password' => 'Passwords do not match']]);
+        }
+    }
+
+    public function changePassword(){
+        try {
+
+            $userId = $_SESSION['user_id'];
+            if(!$userId){
+                UtilityHelper::sendJson('error', "User not found, Please login", 429);
+                return;
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            $currentPassword = trim($data['current_password'] ?? '');
+            $newPassword = trim($data['new_password'] ?? '');
+            $confirmPassword = trim($data['confirm_password'] ?? '');
+
+            if ($currentPassword === '' || $newPassword === '' || $confirmPassword === '') {
+                UtilityHelper::sendJson('error', 'All password fields are required', 400);
+            }
+
+            $this->validateNewPassword($newPassword, $confirmPassword);
+
+            if($currentPassword === $newPassword){
+                UtilityHelper::sendJson('error', "Previous password and new password matches,  Please Login",429);
+                return;
+            }
+
+            $changePassword = $this->userService->passwordChange($userId, $currentPassword, $newPassword);
+            if(!$changePassword){
+                return false;
+            }
+
+            UtilityHelper::sendJson('success', "Password change successful", 201);
+            
+        } catch (Throwable $e) {
+            error_log('Error changing password validation' . $e->getMessage());
+            UtilityHelper::sendJson('error', "An error occurred, Please try again", 500);
+        }
+    }
+
+    public function verifyPasswordChange(){
+        try {
+
+            $userId = $_SESSION['user_id'] ?? null;
+            if(!$userId){
+                UtilityHelper::sendJson('error', "User not found, Please login", 401);
+                return;
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            $token = trim($data['token'] ?? '');
+            $newPassword = trim($data['new_password'] ?? '');
+
+            if ($token === '') {
+                UtilityHelper::sendJson('error', 'Verification token is required', 400);
+                return;
+            }
+
+            $this->userService->verifyPasswordChange($userId, $token, $newPassword);
+
+        } catch (Throwable $e) {
+            error_log('Error verifying password change: ' . $e->getMessage());
+            UtilityHelper::sendJson('error', "An error occurred, Please try again", 500);
+        }
+    }
+
 
 }

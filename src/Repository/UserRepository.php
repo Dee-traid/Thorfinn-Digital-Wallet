@@ -323,6 +323,58 @@ class UserRepository{
 
     }
 
+    public function tokenRequestAttempts(string $userId, string $tokenHash){
+        $query = "SELECT COUNT(*) FROM token WHERE user_id = :userId AND purpose = :purpose AND created_at >= datetime('now', '-5 minutes')";
+        try {
+
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':userId', $userId);
+            $stmt->bindParam(':purpose', $purpose);
+            $stmt->execute();
+
+            return (int) $stmt->fetchColumn();
+
+        } catch (PDOException $e) {
+            error_log("Error fetching token request attempt" . $e->getMessage());
+            throw new PDOException("Error fetching token request attempts " . $e->getMessage());
+        }
+    }
+
+    public function saveTokenAttempts(string $userId, string $tokenHash, string $purpose, DateTimeImmutable $createdAt){
+        $query = "INSERT INTO token_requests (user_id, token_hash, purpose, requested_at) VALUES (:userId, :tokenHash, :purpose, :requestedAt)";
+
+        $requestedAt = ($createdAt)->format('Y-m-d H:i:s');
+        try {
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':userId', $userId);
+            $stmt->bindParam(':tokenHash', $tokenHash);
+            $stmt->bindParam(':purpose', $purpose);
+            $stmt->bindParam(':requestedAt', $requestedAt);
+            $stmt->execute();
+
+        } catch (PDOException $e) {
+            error_log("Error saving token request attempts" . $e->getMessage());
+            throw new PDOException("Error saving token request attempts" . $e->getMessage());
+        }
+    }
+
+    public function deleteTokenAttempts(string $userId, string $purpose){
+        $query = "DELETE FROM token_requests WHERE user_id = :userId AND purpose = :purpose";
+        try {
+
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':userId', $userId);
+            $stmt->bindParam(':purpose', $purpose);
+            $stmt->execute();
+
+       } catch (PDOException $e) {
+            error_log("Error deleting token requests attempt" . $e->getMessage());
+            throw new PDOException("Error deleting token requests" . $e->getMessage());
+       }
+    }
+
+
 }
 
 
