@@ -8,7 +8,6 @@ use src\Interface\Arrayable;
 class Wallet extends BaseModel implements Arrayable{
     private string $userId;
     private string $walletName;
-    private string $walletName;
     private float $balance;
     private string $walletTag;
 
@@ -17,13 +16,11 @@ class Wallet extends BaseModel implements Arrayable{
             string $id, 
             string $userId,
             string $walletName,
-            string $walletName,
             float $balance,
             string $walletTag,
             DateTimeImmutable $createdAt,
             DateTimeImmutable $updatedAt
-            DateTimeImmutable $createdAt,
-            DateTimeImmutable $updatedAt
+        
         )
     {
         parent::__construct($id, $createdAt, $updatedAt);
@@ -38,7 +35,6 @@ class Wallet extends BaseModel implements Arrayable{
     }
 
     public function getUserId(){ return $this->userId; }
-    public function getWalletName(){ return $this->walletName;}
     public function getWalletName(){ return $this->walletName;}
     public function getBalance(){ return $this->balance; }
     public function getWalletTag(){ return $this->walletTag; }
