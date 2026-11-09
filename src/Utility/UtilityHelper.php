@@ -13,19 +13,6 @@ class UtilityHelper{
         exit();
     }
 
-    public static function generateToken($token){
-
-        $token = "";
-    }
-
-    public static function isActive(){
-
-    }
-
-    public static function sendEmailVerification(){
-
-    }
-
     public static function hashValue(string $value){
         return password_hash($value, PASSWORD_BCRYPT, ['cost' => 12]);
     }
@@ -33,6 +20,20 @@ class UtilityHelper{
     public static function verifyValue(string $value, string $hash){
         return password_verify($value,  $hash);
     }
-     
+    
+    public static function generateWalletTag(string $walletName): string{
+        $name = preg_replace('/[^A-Za-z]/', '', $walletName);
+
+        $prefix = strtoUpper(substr($name, 0, 3));
+        if(strlen($prefix < 3)){
+            $prefix = str_pad('$prefix', 3, 'X');
+        }
+
+        $randomNumber = random_int(000000, 999999);
+
+        $walletTag = $prefix . $randomNumber;
+
+        return $walletTag;
+    }
     
 }
