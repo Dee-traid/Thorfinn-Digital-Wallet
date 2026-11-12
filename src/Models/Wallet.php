@@ -20,11 +20,15 @@ class Wallet extends BaseModel implements Arrayable{
             string $walletTag,
             DateTimeImmutable $createdAt,
             DateTimeImmutable $updatedAt
+        
         )
     {
         parent::__construct($id, $createdAt, $updatedAt);
 
+        parent::__construct($id, $createdAt, $updatedAt);
+
         $this->userId = $userId;
+        $this->walletName = $walletName;
         $this->walletName = $walletName;
         $this->balance = $balance;
         $this->walletTag = $walletTag;
@@ -35,42 +39,12 @@ class Wallet extends BaseModel implements Arrayable{
     public function getBalance(){ return $this->balance; }
     public function getWalletTag(){ return $this->walletTag; }
 
-    public function setID(string $id): void{ $this->id = $id;}
-    public function setUserID(string $userId): void{ $this->userId = $userId;}
-    public function setWalletName(string $walletName): void{ $this->walletName = $walletName;}
+    public function setID(string $id): void{ $this->id;}
+    public function setUserID(string $userId): void{ $this->userId;}
+    public function setWalletName(string $walletName): void{ $this->walletName;}
     public function setBalance(float $balance): void{$this->balance = $balance; }
-    public function setWalletTag(string $walletTag): void{$this->walletTag = $walletTag;}
-    
-   
-    public static function mapToRow(array $row): static{
-        $id = $row['id'];
-        $userId = $row['user_id'];
-        $walletName = $row['wallet_name'];
-        $balance = (float)($row['balance']);
-        $walletTag = $row['wallet_tag'];
-        $createdAt =  new DateTimeImmutable($row['created_at']);
-        $updatedAt =  new DateTimeImmutable($row['updated_at']);
-
-        $wallet = new Wallet(
-            $id,
-            $userId,
-            $walletName,
-            $balance,
-            $walletTag,
-            $createdAt,
-            $updatedAt
-        );
-
-        return $wallet;
-    }
-
-    public function toArray(): array{
-        $walletName = $this->getWalletName();
-        $balance = $this->getBalance();
-        $walletTag = $this->getWalletTag();
-        $wallet = [$walletName, $balance, $walletTag];
-
-        return $wallet;
-    }
+    public function setWalletTag(string $walletTag): void{$this->walletTag = $walletTag; }
+    public function setCreatedAt(DateTime $createdAt): void{$this->createdAt = $createdAt; }
+    public function setUpdatedAt(DateTime $updatedAt): void{$this->updatedAt = $updatedAt; }
     
 }
