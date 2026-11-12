@@ -460,6 +460,25 @@ class UserService{
 
     }
 
+    public function logoutUser(string $userId): bool{
+        if (isset($userId)) {
+            unset($userId);
+        }
+
+        $userId = [];
+
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_destroy();
+        }
+
+        return true;
+    }
+
+    public function __destruct() {
+        unset($this->userRepository, $this->mailService);
+    }
+
+
 
 
 }
