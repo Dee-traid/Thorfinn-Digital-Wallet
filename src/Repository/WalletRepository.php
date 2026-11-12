@@ -65,4 +65,123 @@ class WalletRepository{
         }
     }
 
+    public function beginTransaction(){
+        $this->db->beginTransaction();
+    }
+
+    public function commit(): void{
+        $this->db->commit();
+    }
+ 
+    public function rollBack(): void{
+        if ($this->db->inTransaction()) {
+            $this->db->rollBack();
+        }
+    }
+
+    public function findWalletByUserID(string $walletId, string $userId): ?Wallet{
+        $query = "SELECT * FROM wallets WHERE user_id = :userId AND id = :walletId LIMIT 5";
+        try {
+
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':userId', $userId);
+            $stmt->bindParam(':walletId', $walletId);
+            $stmt->execute();
+            $wallet = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            return $wallet ?Wallet::mapToRow($wallet): null; 
+        } catch (PDOException $e) {
+            error_log("Error finding wallet by user's id:" . $e->getMessage());
+            throw new Exception ("Mapper's error");
+        }
+    }
+
+    public function findWalletByIDAndUserID(string $id, string $userId): ?Wallet{
+        $query = "SELECT * FROM wallets WHERE id = :id AND user_id = :userId LIMIT 1";
+        try {
+
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':id', $id);
+            $stmt->bindParam(':userId', $userId);
+            $stmt->execute();
+            $wallet = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            return $wallet ?Wallet::mapToRow($wallet): null; 
+
+        } catch (PDOException $e) {
+            error_log("Error finding User and Wallet id:" . $e->getMessage());
+            throw new Exception ("Error finding User and Wallet id");
+        }
+    }
+
+    public function saveWallet(Wallet $wallet): ?Wallet{
+        $id = $wallet->getID();
+        $userId = $wallet->getUserId();
+        $walletName = $wallet->getWalletName();
+        $balance = $wallet->getBalance();
+        $walletTag = $wallet->getWalletTag();
+        $createdAt = $wallet->getCreatedAt()->format('Y-m-d H:i:s');
+        $updatedAt = $wallet->getUpdatedAt()->format('Y-m-d H:i:s');
+        $query = "INSERT INTO wallets (id, user_id, wallet_name, balance, wallet_tag, created_at, updated_at) VALUES (:id, :userId, :walletName, :balance, :walletTag, :createdAt, :updatedAt)";
+
+        try{
+        
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':id', $id);
+            $stmt->bindParam(':userId', $userId);
+            $stmt->bindParam(':walletName', $walletName);
+            $stmt->bindParam(':balance', $balance);
+            $stmt->bindParam(':walletTag', $walletTag);
+            $stmt->bindParam(':createdAt', $createdAt);
+            $stmt->bindParam(':updatedAt', $updatedAt);
+            $stmt->execute();
+
+            return $wallet;
+            
+        }catch(PDOException $e){
+            error_log("Wallet creation database error" . $e->getMessage());
+            throw new Exception("Database error saving wallet in the database" . $e->getMessage());
+        }
+    }
+
+    public function findWalletTag(string $walletTag){
+
+        $query = "SELECT * FROM wallets WHERE wallet_tag = :walletTag LIMIT 1";
+        try {
+
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':walletTag', $walletTag);
+            $stmt->execute();
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if (!$row) {
+                return null;
+            }
+
+            return Wallet::mapToRow($row);
+
+        } catch (PDOException $e) {
+            error_log("Wallet tag error" . $e->getMessage());
+            throw new PDOException("Error fetching wallet tag" . $e->getMessage());
+        }
+    }
+
+    public function countTotalWalletPerUser(string $userId){
+        $query = "SELECT COUNT(*) FROM wallets WHERE user_id = :userId LIMIT 1";
+        try {
+
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':userId', $userId);
+            $stmt->execute();
+            $wallets = (int) $stmt->fetchColumn();
+
+            return $wallets;
+
+        } catch (PDOException $e) {
+            error_log("Error fetching wallets by user's id" . $e->getMessage());
+            throw new PDOException("Error fetching walles" . $e->getMessage());
+        }
+    }
+
+
 }

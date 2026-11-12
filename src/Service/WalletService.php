@@ -57,4 +57,55 @@ class WalletService{
         ];
     }
 
+    public function createWallet(string $userId, string $walletName, string $walletTag): ?Wallet{
+        try {
+         
+             $user = $this->userRepository->findUserByID($userId);
+             if(!$user){
+                 UtilityHelper::sendJson('error', "User not found", 404);
+             }
+ 
+             $email = $user->getEmail();
+             $fullName = $user->getFullName();
+ 
+             $id = uniqid('wallet-',true);
+             $balance = 0.00;
+             $timeStamp = new DateTimeImmutable();
+             
+             $existingWalletTag = $this->walletRepository->findWalletTag($walletTag);
+             if($existingWalletTag){
+                 UtilityHelper::sendJson('error', "Wallet tag already exist", 409);
+             }
+ 
+             $wallets = $this->walletRepository->countTotalWalletPerUser($userId);
+             if($wallets >= 5){
+                 UtilityHelper::sendJson('error', "Users' wallet creation limit of 5 wallets has been reached.", 409);
+             }
+ 
+             $wallet = new Wallet(
+                 $id,
+                 $userId,
+                 $walletName,
+                 $balance,
+                 $walletTag,
+                 $timeStamp,
+                 $timeStamp
+             );
+ 
+             $savedWallet = $this->walletRepository->saveWallet($wallet);
+             $this->mailService->addWallet($email, $fullName, $walletName);
+ 
+             if($savedWallet !== null){
+                 UtilityHelper::sendJson('success', "Wallet created successfully", 201);
+             }
+ 
+             return $savedWallet;
+        } catch (Throwable $e) {
+             error_log('Error saving new wallet to data' . $e->getMessage());
+             UtilityHelper::sendJson('error', "An error occurred, Please try again", 500);
+             return null;
+        }
+     }
+ 
+
 }
