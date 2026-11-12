@@ -95,4 +95,27 @@ class MailService{
             return false;
         }
     }
+
+    public function addWallet(string $email, string $fullName, string $walletName): bool{
+        $mail = null;
+        try{
+            $mail = $this->createMailer();
+
+            $mail->addAddress($email, $fullName);
+            $name = htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8');
+            $walletName = htmlspecialchars($walletName, ENT_QUOTES, 'UTF-8');
+
+            $mail->Subject = "New wallet added to your profile";
+            $mail->Body = "<h3> Hi {$name},</h3>
+                            <p> A new wallet <h3>{$walletName}</h3> have been added to your profile, Login to confirm. </p>
+                        ";
+            $mail->send();
+
+            return true;
+                        
+        }catch(MailException $e){
+            error_log("Mail error: " . $mail->ErrorInfo);
+            return false;
+        }
+    }
 }
