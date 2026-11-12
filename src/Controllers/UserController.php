@@ -290,5 +290,20 @@ class UserController{
         }
     }
 
+    public function logoutUser(){
+        try{
+ 
+             $userId = $_SESSION['user_id'];
+             $success = $this->userService->logoutUser($userId );
+             if($success){
+                 return UtilityHelper::sendJson('success', "Logout successful", 200);
+             }else {
+                 UtilityHelper::sendJson('error', 'An error occurred while logging out', 400);
+             }
+        }catch(Throwable $e){
+         UtilityHelper::sendJson('error', 'An error occurred while logging out: ' . $e->getMessage(), 500);
+        }
+     }
+
 
 }
