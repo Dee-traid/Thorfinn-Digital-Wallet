@@ -29,10 +29,10 @@ $mailService    = new MailService();
 $userService    = new UserService($userRepository, $mailService);
 $userController = new UserController($userService);
 
-$walletTransferRepository = new WalletTransferRepository();
+//$walletTransferRepository = new WalletTransferRepository();
 $walletRepository = new WalletRepository();
 $mailService    = new MailService();
-$walletService = new WalletService($userRepository, $walletRepository, $walletTransferRepository, $mailService);
+$walletService = new WalletService($userRepository, $walletRepository, $mailService);
 $walletController = new WalletController($walletService);
 
 
