@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Thorfinn — Dashboard</title>
+<title>Thorfinn — Wallet Dashboard</title>
 
-<link rel="icon" href="public/img/favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="public/img/favicon-32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="public/img/favicon-16.png">
-<link rel="apple-touch-icon" sizes="180x180" href="public/img/apple-touch-icon.png">
+<link rel="icon" href="images/logo.png" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="images/logo.png">
+<link rel="icon" type="image/png" sizes="16x16" href="images/logo.png">
+<link rel="apple-touch-icon" sizes="180x180" href="images/logo.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,29 +38,25 @@
         <svg viewBox="0 0 24 24" width="19" height="19"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
         Dashboard
       </a>
-      <a href="#" class="nav-item" data-open-modal="send-modal">
-        <svg viewBox="0 0 24 24" width="19" height="19"><path d="M3 11 L21 3 L13 21 L11 13 L3 11 Z" stroke-linejoin="round"/></svg>
-        Send
+      <a href="#wallets" class="nav-item" data-nav-item>
+        <svg viewBox="0 0 24 24" width="19" height="19"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4" stroke-linecap="round"/><rect x="4" y="6" width="16" height="14" rx="2"/><circle cx="15" cy="13" r="1.5"/></svg>
+        Wallets
       </a>
-      <a href="#" class="nav-item" data-open-modal="receive-modal">
-        <svg viewBox="0 0 24 24" width="19" height="19"><path d="M12 3 V15 M7 10 L12 15 L17 10" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 19 H20" stroke-linecap="round"/></svg>
-        Receive
-      </a>
-      <a href="#cards" class="nav-item" data-nav-item>
-        <svg viewBox="0 0 24 24" width="19" height="19"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10 H22"/></svg>
-        Cards
+      <a href="#" class="nav-item" data-open-modal="transfer-modal">
+        <svg viewBox="0 0 24 24" width="19" height="19"><path d="M7 16V4m0 0L3 8m4-4l4 4m6 4v12m0 0l4-4m-4 4l-4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Transfer
       </a>
       <a href="#transactions" class="nav-item" data-nav-item>
         <svg viewBox="0 0 24 24" width="19" height="19"><path d="M4 6 H20 M4 12 H20 M4 18 H14" stroke-linecap="round"/></svg>
         Transactions
       </a>
-      <a href="#" class="nav-item" data-nav-item>
+      <a href="#" class="nav-item" data-open-modal="settings-modal">
         <svg viewBox="0 0 24 24" width="19" height="19"><path d="M4 6 H20 M4 12 H20 M4 18 H20" stroke-linecap="round"/><circle cx="9" cy="6" r="2" fill="var(--bg-surface)"/><circle cx="15" cy="12" r="2" fill="var(--bg-surface)"/><circle cx="7" cy="18" r="2" fill="var(--bg-surface)"/></svg>
         Settings
       </a>
     </nav>
 
-    <a class="nav-item nav-item-logout" href="index.html">
+    <a class="nav-item nav-item-logout" href="#" id="logout-btn">
       <svg viewBox="0 0 24 24" width="19" height="19"><path d="M15 3 H19 V21 H15" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 12 H3 M7 8 L3 12 L7 16" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Sign out
     </a>
@@ -74,7 +70,7 @@
         <svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 6 H20 M4 12 H20 M4 18 H20" stroke-linecap="round"/></svg>
       </button>
       <div class="topbar-heading">
-        <p class="topbar-greeting">Good afternoon, Elena</p>
+        <p class="topbar-greeting" id="topbar-greeting">Welcome back</p>
         <p class="topbar-date" id="topbar-date"></p>
       </div>
       <div class="topbar-actions">
@@ -82,8 +78,8 @@
           <svg viewBox="0 0 24 24" width="19" height="19"><path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z" stroke-linejoin="round"/><path d="M10 19a2 2 0 0 0 4 0"/></svg>
           <span class="icon-btn-dot" aria-hidden="true"></span>
         </button>
-        <button class="avatar-btn" id="avatar-btn" aria-label="Account menu">
-          <span class="avatar">EC</span>
+        <button class="avatar-btn" id="avatar-btn" aria-label="Account menu" data-open-modal="settings-modal">
+          <span class="avatar" id="avatar-initials"></span>
         </button>
       </div>
     </header>
@@ -93,184 +89,54 @@
       <!-- BALANCE HERO -->
       <section class="balance-hero">
         <div class="balance-main">
-          <p class="balance-label">Available balance</p>
-          <p class="balance-figure">$12,480.32</p>
-          <p class="balance-change"><span class="change-up">▲ 2.4%</span> vs last month · Thorfinn Pay •••• 4471</p>
+          <p class="balance-label">Total Net Balance Across Wallets</p>
+          <p class="balance-figure" id="total-balance-figure">—</p>
+          <p class="balance-change"><span class="change-up">▲ Active</span> · Multi-Wallet System Managed</p>
         </div>
         <div class="quick-actions">
-          <button class="quick-action" data-open-modal="send-modal">
-            <span class="quick-action-icon">
-              <svg viewBox="0 0 24 24" width="20" height="20"><path d="M3 11 L21 3 L13 21 L11 13 L3 11 Z" stroke-linejoin="round"/></svg>
-            </span>
-            Send
-          </button>
-          <button class="quick-action" data-open-modal="receive-modal">
-            <span class="quick-action-icon">
-              <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 3 V15 M7 10 L12 15 L17 10" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 19 H20" stroke-linecap="round"/></svg>
-            </span>
-            Receive
-          </button>
-          <button class="quick-action" data-open-modal="topup-modal">
+          <button class="quick-action" data-open-modal="add-wallet-modal">
             <span class="quick-action-icon">
               <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="9"/><path d="M12 8 V16 M8 12 H16" stroke-linecap="round"/></svg>
             </span>
-            Top up
+            Add Wallet
           </button>
-          <button class="quick-action" data-open-modal="request-modal">
+          <button class="quick-action" data-open-modal="transfer-modal">
             <span class="quick-action-icon">
-              <svg viewBox="0 0 24 24" width="20" height="20"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 8 H15 M9 12 H15 M9 16 H13" stroke-linecap="round"/></svg>
+              <svg viewBox="0 0 24 24" width="20" height="20"><path d="M7 16V4m0 0L3 8m4-4l4 4m6 4v12m0 0l4-4m-4 4l-4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </span>
-            Request
+            Transfer
           </button>
-        </div>
-      </section>
-
-      <!-- QUICK SEND -->
-      <section class="quick-send" aria-label="Quick send to contacts">
-        <div class="contact-chip contact-chip-add" data-open-modal="send-modal">
-          <span class="contact-avatar contact-avatar-add">+</span>
-          <span>Add</span>
-        </div>
-        <div class="contact-chip" data-open-modal="send-modal" data-contact="Maren K.">
-          <span class="contact-avatar" style="background:#2C3B52;">MK</span>
-          <span>Maren</span>
-        </div>
-        <div class="contact-chip" data-open-modal="send-modal" data-contact="Yusuf A.">
-          <span class="contact-avatar" style="background:#3A2A4A;">YA</span>
-          <span>Yusuf</span>
-        </div>
-        <div class="contact-chip" data-open-modal="send-modal" data-contact="Priya R.">
-          <span class="contact-avatar" style="background:#1F3B36;">PR</span>
-          <span>Priya</span>
-        </div>
-        <div class="contact-chip" data-open-modal="send-modal" data-contact="Noah B.">
-          <span class="contact-avatar" style="background:#402A2A;">NB</span>
-          <span>Noah</span>
-        </div>
-        <div class="contact-chip" data-open-modal="send-modal" data-contact="Sofia L.">
-          <span class="contact-avatar" style="background:#2A3A28;">SL</span>
-          <span>Sofia</span>
+          <button class="quick-action" data-open-modal="fund-wallet-modal">
+            <span class="quick-action-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 3v18m9-9H3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            Fund Wallet
+          </button>
         </div>
       </section>
 
       <div class="dash-grid">
 
-        <!-- LINKED CARDS -->
-        <section class="panel cards-panel" id="cards">
+        <!-- WALLET MANAGEMENT PANEL -->
+        <section class="panel wallets-panel" id="wallets">
           <div class="panel-head">
-            <h2>Linked cards</h2>
-            <button class="link-btn">Add card</button>
+            <h2>Your Wallets</h2>
+            <button class="link-btn" data-open-modal="add-wallet-modal">+ Add wallet</button>
           </div>
-          <div class="card-scroll">
-            <div class="wallet-card wallet-card-primary">
-              <p class="wallet-card-label">THORFINN CARD</p>
-              <p class="wallet-card-number">•••• •••• •••• 4471</p>
-              <div class="wallet-card-foot">
-                <span>Elena Cross</span>
-                <span>05/29</span>
-              </div>
-            </div>
-            <div class="wallet-card">
-              <p class="wallet-card-label">CHASE DEBIT</p>
-              <p class="wallet-card-number">•••• •••• •••• 9012</p>
-              <div class="wallet-card-foot">
-                <span>Elena Cross</span>
-                <span>11/27</span>
-              </div>
-            </div>
-            <div class="wallet-card">
-              <p class="wallet-card-label">AMEX PLATINUM</p>
-              <p class="wallet-card-number">•••• •••• •••• 5588</p>
-              <div class="wallet-card-foot">
-                <span>Elena Cross</span>
-                <span>02/28</span>
-              </div>
-            </div>
+
+          <div class="wallet-list-grid" id="wallet-cards-container">
+            <p class="empty-note">Loading your wallets…</p>
           </div>
         </section>
 
-        <!-- SPENDING OVERVIEW -->
-        <section class="panel spending-panel">
-          <div class="panel-head">
-            <h2>Spending this month</h2>
-            <span class="panel-total">$1,842.60</span>
-          </div>
-          <div class="bar-chart">
-            <div class="bar-col"><div class="bar" style="height:78%"></div><span>Food</span></div>
-            <div class="bar-col"><div class="bar" style="height:46%"></div><span>Shopping</span></div>
-            <div class="bar-col"><div class="bar" style="height:100%"></div><span>Bills</span></div>
-            <div class="bar-col"><div class="bar" style="height:28%"></div><span>Transport</span></div>
-            <div class="bar-col"><div class="bar" style="height:15%"></div><span>Other</span></div>
-          </div>
-        </section>
-
-        <!-- TRANSACTIONS -->
+        <!-- TRANSACTIONS PANEL (Last 10 transactions constraint) -->
         <section class="panel transactions-panel" id="transactions">
           <div class="panel-head">
-            <h2>Recent transactions</h2>
-            <button class="link-btn">View all</button>
+            <h2>Recent Transactions (Last 10)</h2>
+            <span class="panel-total" id="active-wallet-label">All Wallets</span>
           </div>
           <ul class="tx-list" id="tx-list">
-            <li class="tx-row">
-              <span class="tx-icon tx-icon-out">
-                <svg viewBox="0 0 24 24" width="16" height="16"><path d="M7 17 L17 7 M9 7 H17 V15" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </span>
-              <span class="tx-info">
-                <span class="tx-name">Maren K.</span>
-                <span class="tx-meta">Sent · Today, 9:41 AM</span>
-              </span>
-              <span class="tx-amount tx-amount-out">-$120.00</span>
-            </li>
-            <li class="tx-row">
-              <span class="tx-icon tx-icon-in">
-                <svg viewBox="0 0 24 24" width="16" height="16"><path d="M17 7 L7 17 M7 9 V17 H15" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </span>
-              <span class="tx-info">
-                <span class="tx-name">Payroll</span>
-                <span class="tx-meta">Received · Yesterday</span>
-              </span>
-              <span class="tx-amount tx-amount-in">+$3,200.00</span>
-            </li>
-            <li class="tx-row">
-              <span class="tx-icon tx-icon-out">
-                <svg viewBox="0 0 24 24" width="16" height="16"><path d="M7 17 L17 7 M9 7 H17 V15" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </span>
-              <span class="tx-info">
-                <span class="tx-name">Spotify</span>
-                <span class="tx-meta">Subscription · Sep 15</span>
-              </span>
-              <span class="tx-amount tx-amount-out">-$10.99</span>
-            </li>
-            <li class="tx-row">
-              <span class="tx-icon tx-icon-in">
-                <svg viewBox="0 0 24 24" width="16" height="16"><path d="M17 7 L7 17 M7 9 V17 H15" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </span>
-              <span class="tx-info">
-                <span class="tx-name">Yusuf A.</span>
-                <span class="tx-meta">Received · Sep 14</span>
-              </span>
-              <span class="tx-amount tx-amount-in">+$45.00</span>
-            </li>
-            <li class="tx-row">
-              <span class="tx-icon tx-icon-out">
-                <svg viewBox="0 0 24 24" width="16" height="16"><path d="M7 17 L17 7 M9 7 H17 V15" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </span>
-              <span class="tx-info">
-                <span class="tx-name">Amazon</span>
-                <span class="tx-meta">Shopping · Sep 12</span>
-              </span>
-              <span class="tx-amount tx-amount-out">-$68.40</span>
-            </li>
-            <li class="tx-row">
-              <span class="tx-icon tx-icon-in">
-                <svg viewBox="0 0 24 24" width="16" height="16"><path d="M17 7 L7 17 M7 9 V17 H15" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </span>
-              <span class="tx-info">
-                <span class="tx-name">Top up</span>
-                <span class="tx-meta">Added money · Sep 10</span>
-              </span>
-              <span class="tx-amount tx-amount-in">+$500.00</span>
-            </li>
+            <li class="empty-note">Loading transactions…</li>
           </ul>
         </section>
 
@@ -279,126 +145,210 @@
   </div>
 </div>
 
-<!-- SEND MODAL -->
-<div class="modal-overlay" id="send-modal" hidden>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="send-modal-title">
+<!-- ADD WALLET MODAL -->
+<div class="modal-overlay" id="add-wallet-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="add-wallet-title">
     <button class="modal-close" data-close-modal aria-label="Close">&times;</button>
-    <h2 id="send-modal-title">Send money</h2>
-    <p class="modal-sub">Money usually arrives in seconds.</p>
-    <form id="form-send" novalidate>
+    <h2 id="add-wallet-title">Add New Wallet</h2>
+    <p class="modal-sub">Create a new segregated financial wallet.</p>
+    <form id="form-add-wallet" method="POST" novalidate>
       <div class="field">
-        <label for="send-to">To</label>
-        <input type="text" id="send-to" name="to" placeholder="Name, email, or phone" required>
-        <p class="field-error" data-error-for="send-to"></p>
+        <label for="wallet-name-input">Wallet Name</label>
+        <input type="text" id="wallet-name-input" name="wallet_name" placeholder="e.g. Travel Fund, Crypto" maxlength="40" autocomplete="off" required>
+        <p class="field-error" data-error-for="wallet-name-input"></p>
       </div>
-      <div class="field">
-        <label for="send-amount">Amount</label>
-        <div class="amount-input">
-          <span>$</span>
-          <input type="text" inputmode="decimal" id="send-amount" name="amount" placeholder="0.00" required>
-        </div>
-        <p class="field-error" data-error-for="send-amount"></p>
-      </div>
-      <div class="field">
-        <label for="send-note">Note (optional)</label>
-        <input type="text" id="send-note" name="note" placeholder="What's it for?">
-      </div>
-      <p class="form-banner" id="send-banner" role="alert" hidden></p>
-      <button type="submit" class="btn btn-primary btn-block" id="send-submit">
-        <span class="btn-label">Send</span>
+      <p class="form-banner" id="add-wallet-banner" role="alert" hidden></p>
+      <button type="submit" class="btn btn-primary btn-block" id="add-wallet-submit">
+        <span class="btn-label">Create Wallet</span>
       </button>
     </form>
   </div>
 </div>
 
-<!-- RECEIVE MODAL -->
-<div class="modal-overlay" id="receive-modal" hidden>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="receive-modal-title">
+<!-- EDIT WALLET MODAL -->
+<div class="modal-overlay" id="edit-wallet-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-wallet-title">
     <button class="modal-close" data-close-modal aria-label="Close">&times;</button>
-    <h2 id="receive-modal-title">Receive money</h2>
-    <p class="modal-sub">Share your Thorfinn ID so anyone can pay you.</p>
-    <div class="receive-id">
-      <span id="receive-id-value">elena.cross@thorfinn.pay</span>
-      <button class="link-btn" id="copy-id-btn" type="button">Copy</button>
-    </div>
-    <div class="receive-qr" aria-hidden="true">
-      <svg viewBox="0 0 120 120" width="140" height="140">
-        <rect width="120" height="120" rx="10" fill="#1B2333"/>
-        <g fill="#6FE7D8">
-          <rect x="14" y="14" width="26" height="26" rx="3"/>
-          <rect x="80" y="14" width="26" height="26" rx="3"/>
-          <rect x="14" y="80" width="26" height="26" rx="3"/>
-          <rect x="21" y="21" width="12" height="12" rx="1.5" fill="#1B2333"/>
-          <rect x="87" y="21" width="12" height="12" rx="1.5" fill="#1B2333"/>
-          <rect x="21" y="87" width="12" height="12" rx="1.5" fill="#1B2333"/>
-          <rect x="50" y="14" width="8" height="8"/>
-          <rect x="64" y="28" width="8" height="8"/>
-          <rect x="50" y="50" width="20" height="20"/>
-          <rect x="80" y="56" width="8" height="8"/>
-          <rect x="94" y="70" width="8" height="8"/>
-          <rect x="50" y="80" width="8" height="8"/>
-          <rect x="64" y="94" width="8" height="8"/>
-          <rect x="80" y="94" width="26" height="8"/>
-        </g>
-      </svg>
-    </div>
+    <h2 id="edit-wallet-title">Edit Wallet Details</h2>
+    <p class="modal-sub">Update wallet name.</p>
+    <form id="form-edit-wallet" method="POST" novalidate>
+      <input type="hidden" id="edit-wallet-id">
+      <div class="field">
+        <label for="edit-wallet-name-input">Wallet Name</label>
+        <input type="text" id="edit-wallet-name-input" name="wallet_name" placeholder="New wallet name" maxlength="40" autocomplete="off" required>
+        <p class="field-error" data-error-for="edit-wallet-name-input"></p>
+      </div>
+      <p class="form-banner" id="edit-wallet-banner" role="alert" hidden></p>
+      <button type="submit" class="btn btn-primary btn-block" id="edit-wallet-submit">
+        <span class="btn-label">Save Changes</span>
+      </button>
+    </form>
   </div>
 </div>
 
-<!-- TOP UP MODAL -->
-<div class="modal-overlay" id="topup-modal" hidden>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="topup-modal-title">
+<!-- FUND WALLET MODAL -->
+<div class="modal-overlay" id="fund-wallet-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="fund-wallet-title">
     <button class="modal-close" data-close-modal aria-label="Close">&times;</button>
-    <h2 id="topup-modal-title">Top up balance</h2>
-    <p class="modal-sub">Add money from a linked card or bank account.</p>
-    <form id="form-topup" novalidate>
+    <h2 id="fund-wallet-title">Fund Wallet</h2>
+    <p class="modal-sub">Choose where the money comes from and which wallet receives it.</p>
+    <form id="form-fund-wallet" novalidate>
       <div class="field">
-        <label for="topup-source">From</label>
-        <select id="topup-source" name="source">
-          <option>Thorfinn Card •••• 4471</option>
-          <option>Chase Debit •••• 9012</option>
-          <option>Amex Platinum •••• 5588</option>
+        <label for="fund-source">Fund From</label>
+        <select id="fund-source" name="sender_wallet_id"></select>
+        <p class="field-error" data-error-for="fund-source"></p>
+      </div>
+      <div class="field">
+        <label for="fund-wallet-select">Fund To (Receiving Wallet)</label>
+        <select id="fund-wallet-select" name="beneficiary_wallet_id"></select>
+        <p class="field-error" data-error-for="fund-wallet-select"></p>
+      </div>
+      <div class="field">
+        <label for="fund-amount">Amount</label>
+        <div class="amount-input">
+          <span>₦</span>
+          <input type="text" inputmode="decimal" id="fund-amount" name="amount" placeholder="0.00" required>
+        </div>
+        <p class="field-error" data-error-for="fund-amount"></p>
+      </div>
+      <p class="form-banner" id="fund-wallet-banner" role="alert" hidden></p>
+      <button type="submit" class="btn btn-primary btn-block" id="fund-wallet-submit">
+        <span class="btn-label">Fund Wallet</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- TRANSFER MODAL -->
+<div class="modal-overlay" id="transfer-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="transfer-modal-title">
+    <button class="modal-close" data-close-modal aria-label="Close">&times;</button>
+    <h2 id="transfer-modal-title">Wallet Transfer</h2>
+    <p class="modal-sub">Transfer between your own wallets or to another user.</p>
+    <form id="form-transfer" novalidate>
+      <div class="field">
+        <label for="transfer-type">Transfer Type</label>
+        <select id="transfer-type" name="type">
+          <option value="internal">Between My Own Wallets</option>
+          <option value="external">To Another User's Wallet</option>
         </select>
       </div>
-      <div class="field">
-        <label for="topup-amount">Amount</label>
-        <div class="amount-input">
-          <span>$</span>
-          <input type="text" inputmode="decimal" id="topup-amount" name="amount" placeholder="0.00" required>
-        </div>
-        <p class="field-error" data-error-for="topup-amount"></p>
+      <div class="field" id="source-wallet-field">
+        <label for="transfer-from-wallet">From Wallet</label>
+        <select id="transfer-from-wallet" name="from_wallet"></select>
+        <p class="field-error" data-error-for="transfer-from-wallet"></p>
       </div>
-      <p class="form-banner" id="topup-banner" role="alert" hidden></p>
-      <button type="submit" class="btn btn-primary btn-block" id="topup-submit">
-        <span class="btn-label">Add money</span>
+      <div class="field" id="destination-field-internal">
+        <label for="transfer-to-wallet">To Wallet</label>
+        <select id="transfer-to-wallet" name="to_wallet"></select>
+        <p class="field-error" data-error-for="transfer-to-wallet"></p>
+      </div>
+      <div class="field" id="destination-field-external" hidden>
+        <label for="transfer-external-recipient">Recipient Wallet Tag</label>
+        <input type="text" id="transfer-external-recipient" name="recipient" placeholder="e.g. TRA123456 or user@thorfinn.pay" autocomplete="off">
+        <p class="field-error" data-error-for="transfer-external-recipient"></p>
+      </div>
+      <div class="field" id="transfer-pin-field" hidden>
+        <label for="transfer-pin">Transaction PIN</label>
+        <input type="password" id="transfer-pin" name="pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="••••">
+        <p class="field-error" data-error-for="transfer-pin"></p>
+      </div>
+      <div class="field">
+        <label for="transfer-amount">Amount</label>
+        <div class="amount-input">
+          <span>₦</span>
+          <input type="text" inputmode="decimal" id="transfer-amount" name="amount" placeholder="0.00" required>
+        </div>
+        <p class="field-error" data-error-for="transfer-amount"></p>
+      </div>
+      <p class="form-banner" id="transfer-banner" role="alert" hidden></p>
+      <button type="submit" class="btn btn-primary btn-block" id="transfer-submit">
+        <span class="btn-label">Execute Transfer</span>
       </button>
     </form>
   </div>
 </div>
 
-<!-- REQUEST MODAL -->
-<div class="modal-overlay" id="request-modal" hidden>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="request-modal-title">
+<!-- WALLET DETAILS MODAL -->
+<div class="modal-overlay" id="wallet-details-modal" hidden>
+  <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="wallet-details-title">
     <button class="modal-close" data-close-modal aria-label="Close">&times;</button>
-    <h2 id="request-modal-title">Request money</h2>
-    <p class="modal-sub">Send a request to get paid back.</p>
-    <form id="form-request" novalidate>
-      <div class="field">
-        <label for="request-from">From</label>
-        <input type="text" id="request-from" name="from" placeholder="Name, email, or phone" required>
-        <p class="field-error" data-error-for="request-from"></p>
-      </div>
-      <div class="field">
-        <label for="request-amount">Amount</label>
-        <div class="amount-input">
-          <span>$</span>
-          <input type="text" inputmode="decimal" id="request-amount" name="amount" placeholder="0.00" required>
+    <h2 id="wallet-details-title">Wallet Details</h2>
+    <p class="modal-sub">Balance, wallet tag and your last 10 transactions.</p>
+    <div class="wallet-detail-stats">
+      <div class="stat"><span class="stat-label">Balance</span><span class="stat-value" id="wd-balance"></span></div>
+      <div class="stat"><span class="stat-label">Wallet tag</span><span class="stat-value" id="wd-tag"></span></div>
+      <div class="stat"><span class="stat-label">Transactions</span><span class="stat-value" id="wd-count"></span></div>
+      <div class="stat" id="wd-created-box" hidden><span class="stat-label">Created</span><span class="stat-value" id="wd-created"></span></div>
+    </div>
+    <div class="detail-head">
+      <h3 class="detail-subhead">Last 10 Transactions</h3>
+      <button type="button" class="link-btn" id="wd-filter">Show on dashboard</button>
+    </div>
+    <ul class="tx-list" id="wd-tx-list"></ul>
+  </div>
+</div>
+
+<!-- USER SETTINGS / CHANGE PASSWORD MODAL -->
+<div class="modal-overlay" id="settings-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+    <button class="modal-close" data-close-modal aria-label="Close">&times;</button>
+    <h2 id="settings-modal-title">User Settings</h2>
+    <p class="modal-sub">Manage profile.</p>
+    <form id="form-change-password" novalidate>
+      <h3 style="font-size: 1rem; margin-bottom: 12px; color: var(--ice);">Change Password</h3>
+      
+      <div id="password-step-1">
+        <div class="field">
+          <label for="current-password">Current Password</label>
+          <input type="password" id="current-password" name="current_password" placeholder="••••••••" required>
+          <p class="field-error" data-error-for="current-password"></p>
         </div>
-        <p class="field-error" data-error-for="request-amount"></p>
+        <div class="field">
+          <label for="new-password">New Password</label>
+          <input type="password" id="new-password" name="new_password" placeholder="••••••••" required>
+          <p class="field-error" data-error-for="new-password"></p>
+        </div>
+        <div class="field">
+          <label for="confirm-password">Confirm New Password</label>
+          <input type="password" id="confirm-password" name="confirm_password" placeholder="••••••••" required>
+          <p class="field-error" data-error-for="confirm-password"></p>
+        </div>
       </div>
-      <p class="form-banner" id="request-banner" role="alert" hidden></p>
-      <button type="submit" class="btn btn-primary btn-block" id="request-submit">
-        <span class="btn-label">Send request</span>
+
+      <!--  Token Verification Field -->
+      <div id="password-step-2" hidden>
+        <div class="field">
+          <label for="password-token">Verification Token</label>
+          <input type="text" id="password-token" name="token" placeholder="Enter 6-character token" maxlength="6" autocomplete="off">
+          <p class="field-error" data-error-for="token"></p>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">A verification token has been sent to your email address.</p>
+        </div>
+      </div>
+
+      <p class="form-banner" id="settings-banner" role="alert" hidden></p>
+      <button type="submit" class="btn btn-primary btn-block" id="settings-submit">
+        <span class="btn-label" id="settings-submit-label">Verify Current Password</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- WALLET PIN AUTHORIZATION MODAL  -->
+<div class="modal-overlay modal-overlay--top" id="pin-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pin-modal-title">
+    <button class="modal-close" data-close-modal aria-label="Cancel">&times;</button>
+    <h2 id="pin-modal-title">Authorize Request</h2>
+    <p class="modal-sub" id="pin-modal-summary">Enter your wallet PIN to continue.</p>
+    <form id="form-pin" novalidate autocomplete="off">
+      <div class="field">
+        <label for="pin-input">Wallet PIN</label>
+        <input type="password" id="pin-input" name="pin" class="pin-input" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="••••" required>
+        <p class="field-error" data-error-for="pin-input"></p>
+      </div>
+      <p class="form-banner" id="pin-banner" role="alert" hidden></p>
+      <button type="submit" class="btn btn-primary btn-block" id="pin-submit">
+        <span class="btn-label">Confirm</span>
       </button>
     </form>
   </div>
