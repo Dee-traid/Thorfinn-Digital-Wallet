@@ -15,13 +15,13 @@ use Throwable;
 class WalletService{
     private UserRepository $userRepository;
     private WalletRepository $walletRepository;
-    private WalletTransferRepository $walletTransferRepository;
+    //private WalletTransferRepository $walletTransferRepository;
     private MailService $mailService;
 
-    public function __construct(UserRepository $userRepository, WalletRepository $walletRepository,WalletTransferRepository $walletTransferRepository, MailService $mailService){
+    public function __construct(UserRepository $userRepository, WalletRepository $walletRepository, MailService $mailService){
         $this->userRepository = $userRepository;
         $this->walletRepository = $walletRepository;
-        $this->walletTransferRepository = $walletTransferRepository;
+        //$this->walletTransferRepository = $walletTransferRepository;
         $this->mailService = $mailService;
     }
 
