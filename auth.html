@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- <meta name="csrf-token" content="<?php echo $_SESSION['csrf-token']";?> -->
 <title>Thorfinn — Sign in</title>
 
 <link rel="icon" href="images/logo.png" sizes="any">
@@ -52,7 +51,7 @@
           <div class="field">
             <label for="login-password">Password</label>
             <div class="input-with-action">
-              <input type="password" id="login-password" name="password_hash" autocomplete="current-password" placeholder="Enter your password" required>
+              <input type="password" id="login-password" name="password" autocomplete="current-password" placeholder="Enter your password" required>
               <button type="button" class="input-action" data-toggle-password="login-password">Show</button>
             </div>
             <p class="field-error" data-error-for="login-password"></p>
@@ -157,42 +156,58 @@
       <!-- FORGOT PASSWORD -->
       <section class="view" id="view-forgot" data-view="forgot" hidden>
         <h1>Reset your password</h1>
-        <p class="view-sub">Enter the email on your account and we'll send a reset link.</p>
-
-        <form id="form-forgot" novalidate>
+        <p class="view-sub">Enter the email on your account and we'll send you a 6-digit token.</p>
+ 
+        <form id="form-forgot" novalidate method="POST">
           <div class="field">
             <label for="forgot-email">Email</label>
             <input type="email" id="forgot-email" name="email" autocomplete="email" placeholder="you@example.com" required>
             <p class="field-error" data-error-for="forgot-email"></p>
           </div>
-
+ 
           <p class="form-banner" id="forgot-banner" role="alert" hidden></p>
-
+ 
           <button type="submit" class="btn btn-primary btn-block" id="forgot-submit">
-            <span class="btn-label">Send reset link</span>
+            <span class="btn-label">Send token</span>
           </button>
         </form>
-
+ 
         <p class="view-switch"><a href="#" data-nav="login">Back to sign in</a></p>
       </section>
-
-      <!-- FORGOT: CHECK EMAIL -->
-      <section class="view" id="view-sent" data-view="sent" hidden>
+ 
+      <!-- VERIFY TOKEN -->
+      <section class="view" id="view-token" data-view="token" hidden>
         <div class="status-icon status-icon-mail" aria-hidden="true">
           <svg viewBox="0 0 48 48" width="40" height="40"><rect x="6" y="12" width="36" height="26" rx="4" fill="none" stroke="#6FE7D8" stroke-width="2"/><path d="M8 14 L24 27 L40 14" fill="none" stroke="#6FE7D8" stroke-width="2"/></svg>
         </div>
-        <h1>Check your email</h1>
-        <p class="view-sub">If an account matches <strong id="sent-email-echo">that address</strong>, a reset link is on its way. It expires in 30 minutes.</p>
-        <button type="button" class="btn btn-ghost btn-block" data-nav="forgot">Use a different email</button>
-        <p class="view-switch"><a href="#" data-nav="login">Back to sign in</a></p>
+        <h1>Enter your token</h1>
+        <p class="view-sub">If an account matches <strong id="token-email-echo"></strong>, a 6-digit token is on its way. It expires in 10 minutes.</p>
+ 
+        <form id="form-token" novalidate method="POST">
+          <div class="field">
+            <label for="token-input">Reset token</label>
+            <input type="text" id="token-input" name="token" class="pin-input" inputmode="text" pattern="(?=.*[A-Z])(?=.*[0-9])[A-Z0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="••••••" required>
+            <p class="pin-hint" id="token-demo-hint" hidden></p>
+            <p class="field-error" data-error-for="token-input"></p>
+          </div>
+ 
+          <p class="form-banner" id="token-banner" role="alert" hidden></p>
+ 
+          <button type="submit" class="btn btn-primary btn-block" id="token-submit">
+            <span class="btn-label">Verify token</span>
+          </button>
+          <button type="button" class="btn btn-ghost btn-block" id="token-resend">Resend token</button>
+        </form>
+ 
+        <p class="view-switch"><a href="#" data-nav="forgot">Use a different email</a> or <a href="#" data-nav="login">Go back</a></p>
       </section>
-
+ 
       <!-- RESET PASSWORD -->
       <section class="view" id="view-reset" data-view="reset" hidden>
         <h1>Choose a new password</h1>
         <p class="view-sub">This resets access on every device that's currently signed in.</p>
-
-        <form id="form-reset" novalidate>
+ 
+        <form id="form-reset" novalidate method="POST">
           <div class="field">
             <label for="reset-password">New password</label>
             <div class="input-with-action">
@@ -205,15 +220,15 @@
             <p class="strength-label" id="reset-strength-label">Use 8+ characters with a number and a symbol</p>
             <p class="field-error" data-error-for="reset-password"></p>
           </div>
-
+ 
           <div class="field">
             <label for="reset-confirm">Confirm new password</label>
-            <input type="password" id="reset-confirm" name="confirm" autocomplete="new-password" placeholder="Re-enter your password" required>
+            <input type="password" id="reset-confirm" name="confirm_password" autocomplete="new-password" placeholder="Re-enter your password" required>
             <p class="field-error" data-error-for="reset-confirm"></p>
           </div>
-
+ 
           <p class="form-banner" id="reset-banner" role="alert" hidden></p>
-
+ 
           <button type="submit" class="btn btn-primary btn-block" id="reset-submit">
             <span class="btn-label">Reset password</span>
           </button>
@@ -229,7 +244,7 @@
           </svg>
         </div>
         <h1 id="success-heading">You're in</h1>
-        <p class="view-sub" id="success-sub">Your wallet is ready. This is a front-end demo, so nothing was actually created — wire this up to your backend to go live.</p>
+        <p class="view-sub" id="success-sub"></p>
         <button type="button" class="btn btn-primary btn-block" data-nav="login">Back to sign in</button>
       </section>
 
