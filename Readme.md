@@ -279,4 +279,4 @@ thorfinn-wallet/
 ## 11. License & Contact
 
 * **License:** Distributed under the **MIT License**. See the `LICENSE` file for details.
-* **Support & Issues:** Found a bug or have a question? Please open an issue on the repository's [GitHub Issues](https://github.com/your-username/thorfinn-wallet/issues) page.
+* **Support & Issues:** Found a bug or have a question? Please open an issue on the repository's [GitHub Issues](https://github.com/Dee-Traid/Thorfinn-Digital-Wallet/issues) page.
