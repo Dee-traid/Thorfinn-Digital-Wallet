@@ -47,6 +47,11 @@ class WalletController{
                 return;
             }
 
+            if(strlen($walletName) <= 2){
+                UtilityHelper::sendJson('error', 'Enter a valid wallet name', 400);
+                return;
+            }
+
             $attempt = 0;
             $maxAttempts = 5;
             do{
