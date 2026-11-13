@@ -106,6 +106,48 @@ class WalletService{
              return null;
         }
      }
+
+     public function updateWalletName(string $userId, string $walletId, string $walletName){
+        try {
+
+            if(!$walletName){
+                UtilityHelper::sendJson('error', "Enter wallet name", 401);
+                return;
+            }
+    
+            $user = $this->userRepository->findUserByID($userId);
+            if(!$user){
+                UtilityHelper::sendJson('error', "User not found, Please Login", 404);
+                return;
+            }
+    
+            $wallet = $this->walletRepository->findWalletByUserID($walletId, $userId);
+            if(!$wallet){
+                UtilityHelper::sendJson('error', "Wallet not found", 404);
+                return;
+            }
+
+            $updatedAt = new DateTimeImmutable();
+    
+            $wallet->setWalletName($walletName);
+            $wallet->setUpdatedAt($updatedAt);
+    
+            $walletUpdate = $this->walletRepository->updateWalletDetails($wallet);
+
+            try {
+                $this->mailService->updateWallet($user->getEmail(), $user->getFullName(), $walletName);
+            } catch (Throwable $e) {
+                error_log("Failed to send wallet update email: " . $e->getMessage());
+            }
+
+            return $walletUpdate;
+    
+        } catch (Throwable $e) {
+            error_log('Wallet update error: ' . $e->getMessage());
+            UtilityHelper::sendJson('error', "An error occurred, Try again", 500);
+        }
+    }
+
  
 
 }
