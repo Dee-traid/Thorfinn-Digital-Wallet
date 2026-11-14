@@ -509,6 +509,137 @@ class WalletService{
          }
      }
  
- 
+     public function walletExternalTransfer(string $transferMode, string $userId, string $senderWalletId, string $recipientWalletTag, float $amount, string $pin){
+        $user = $this->userRepository->findUserByID($userId);
+        if(!$user){
+            return UtilityHelper::sendJson('erro', "User not found, Please Login", 403);
+        }
+
+        if($transferMode !== 'external'){
+            return UtilityHelper::sendJson('error', "Invalid transfer mode selected", 400);
+        }
+
+        if($amount <= 0){
+            return UtilityHelper::sendJson('error', "Funding amount should not be less than or equal to zero", 422);      
+        }
+
+        $senderWallet = $this->getOwnedWalletById($senderWalletId, $userId);
+        if(!$senderWallet){
+            return UtilityHelper::sendJson('error', "Sender wallet not found", 404);
+        }
+
+        $senderBalance = $senderWallet->getBalance();
+        if($senderBalance === 0 || $amount > $senderBalance){
+            return UtilityHelper::sendJson('error', "Insufficient balance", 400);
+        }
+
+        if(!isset($pin) || !UtilityHelper::verifyValue($pin, $user->getWalletTransactionPinHash())){
+            return UtilityHelper::sendJson('error', "Incorrect wallet transfer pin", 403);
+        }
+
+        $recipientWallet = $this->walletRepository->findWalletTag($recipientWalletTag);
+        if(!$recipientWallet){
+            return UtilityHelper::sendJson('error', "Recipient wallet tag not found", 404);
+        }
+
+        $recipientWalletId = $recipientWallet->getID();
+        $recipientUserId = $recipientWallet->getUserId();
+        if($senderWalletId === $recipientWalletId){
+            return UtilityHelper::sendJson('error', "You cannot perform a transfer to your own wallet via external transfer mode", 400);
+        }
+
+        $recipientBalance = $recipientWallet->getBalance($recipientWalletTag);
+
+        $transfer = $this->saveTransfer($senderWalletId, $recipientWalletId, $amount);
+        return $this->externalTransfer($userId, $transfer, $senderBalance, $recipientBalance, $recipientUserId);
+
+    }
+
+    private function externalTransfer(string $userId, WalletTransfer $transfer, float $senderBalance, float $recipientBalance, string $recipientUserId){
+        $now = new DateTimeImmutable();
+        $transferId = $transfer->getID();
+        $now = new DateTimeImmutable();
+        $transferId = $transfer->getID();
+        $senderWalletId = $transfer->getSenderWalletId();
+        $recipientWalletId = $transfer->getBeneficiaryWalletId();
+        $amount = $transfer->getAmount();
+        $reference = $transfer->getTransferReference();
+        $narration = 'External Wallet-Transfer';
+
+        $senderBalanceAfter = $senderBalance - $amount;
+        $recipientBalanceAfter = $recipientBalance + $amount;
+
+        try{
+
+            $this->walletRepository->beginTransaction();
+
+            $debit = $this->walletRepository->debitWallet($senderWalletId, $userId, $amount, $now);
+            if(!$debit){
+                UtilityHelper::sendJson('error', "Insuffcient funds", 422);
+            }
+
+            $credit = $this->walletRepository->creditWallet($recipientWalletId,  $recipientUserId, $amount, $now);
+            if(!$credit){
+                UtilityHelper::sendJson('error', "Wallet not found", 422);
+            }
+
+            $senderTxnHistory = $this->recordTransactionHistory($senderWalletId, $senderBalance, $amount,  $senderBalanceAfter, 'debit', $reference . '-DR', $narration, $now);
+            $recipientTxnHistory = $this->recordTransactionHistory($recipientWalletId, $recipientBalance, $amount, $recipientBalanceAfter, 'credit', $reference . '-CR', $narration, $now);
+
+            $this->walletRepository->updateTransferStatus($transferId, 'successful');
+
+            try {
+
+                $user = $this->userRepository->findUserByID($userId);
+                if ($user) {
+                    $senderWallet = $this->walletRepository->findWalletByIDAndUserID($senderWalletId, $userId);
+                    $senderWalletName = $senderWallet ? $senderWallet->getWalletName() : 'Sender Wallet';
+
+                    $this->mailService->sendTransactionNotification(
+                        $user->getEmail(),
+                        $user->getFullName(),
+                        $amount,
+                        'debit',
+                        $senderWalletName,
+                        $reference . '-DR'
+                    );
+                }
+
+                $recipientUser = $this->userRepository->findUserByID($recipientUserId);
+                if ($recipientUser) {
+                    $recipientWallet = $this->walletRepository->findWalletByIDAndUserID($recipientWalletId, $recipientUserId);
+                    $recipientWalletName = $recipientWallet ? $recipientWallet->getWalletName() : 'Recipient Wallet';
+
+                    $this->mailService->sendTransactionNotification(
+                        $recipientUser->getEmail(),
+                        $recipientUser->getFullName(),
+                        $amount,
+                        'credit',
+                        $recipientWalletName,
+                        $reference . '-CR'
+                    );
+                }
+            } catch (Throwable $e) {
+                error_log("Failed to send external transfer notification email: " . $e->getMessage());
+            }
+            
+            $this->walletRepository->commit();
+            return [
+                'transfer_id' => $transferId,
+                'reference'=> $reference,
+                'status' => 'successful',
+                'sender_balance_after'=> $senderBalanceAfter,
+                'recipient_balance_after' => $recipientBalanceAfter,
+            ];
+
+        }catch (Throwable $e) {
+            $this->walletRepository->rollBack();
+            $this->markTransactionFailed($transferId);
+            error_log("Wallet external failed: " . $e->getMessage());
+            return UtilityHelper::sendJson('error', "Unable to complete", 500);
+        }
+
+    }
+
 
 }
