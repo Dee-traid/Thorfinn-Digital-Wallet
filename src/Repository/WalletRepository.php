@@ -184,4 +184,31 @@ class WalletRepository{
     }
 
 
+    public function updateWalletDetails(Wallet $wallet): bool{
+        $walletName = $wallet->getWalletName() ?? '';
+        $updatedAt = $wallet->getUpdatedAt()->format('Y-m-d H:i:s') ?? '';
+        $id = $wallet->getID();
+        $userId = $wallet->getUserID();
+
+        $query = "UPDATE wallets SET wallet_name = :walletName, updated_at = :updatedAt WHERE id = :id AND user_id = :userId";
+        try {
+
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':id', $id);
+            $stmt->bindParam(':userId', $userId);
+            $stmt->bindParam(':walletName', $walletName);
+            $stmt->bindParam(':updatedAt', $updatedAt);
+            $stmt->execute();
+            $wallet = $stmt->rowCount() > 0;
+
+            return $wallet; 
+
+        } catch (PDOException $e) {
+            error_log("Wallet update error" . $e->getMessage());
+            throw new PDOException("Error updating wallet details" . $e->getMessage());
+        }
+    }
+
+
+
 }
