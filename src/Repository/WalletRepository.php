@@ -231,6 +231,82 @@ class WalletRepository{
     }
 
 
+    public function debitWallet(string $senderWalletId, string $userId, float $amount, DateTimeImmutable $now): bool{
+        $query = "UPDATE wallets SET balance = balance - :amount, updated_at = :updatedAt WHERE id = :id AND user_id = :userId AND balance >= :minimum";
+        $now = $now->format('Y-m-d H:i:s');
 
+        try{
+
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':id', $senderWalletId);
+            $stmt->bindParam(':userId', $userId);
+            $stmt->bindParam(':amount', $amount);
+            $stmt->bindParam(':minimum', $amount);
+            $stmt->bindParam(':updatedAt', $now);
+            $stmt->execute();
+
+            return $stmt->rowCount() === 1;
+ 
+        } catch (PDOException $e) {
+            error_log("Error debiting wallet: " . $e->getMessage());
+            throw new PDOException("Error debiting wallet: " . $e->getMessage());
+        }
+    }
+
+    public function creditWallet(string $beneficiaryWalletId, string $userId, float $amount, DateTimeImmutable $now): bool{
+        $query = "UPDATE wallets SET balance = balance + :amount, updated_at = :updatedAt WHERE id = :id AND user_id = :userId";
+        $now = $now->format('Y-m-d H:i:s');
+
+        try{
+
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':id', $beneficiaryWalletId);
+            $stmt->bindParam(':userId', $userId);
+            $stmt->bindParam(':amount', $amount);
+            $stmt->bindParam(':updatedAt', $now);
+            $stmt->execute();
+
+            return $stmt->rowCount() === 1;
+
+        }catch(PDOException $e){
+            error_log("Error crediting wallet: " . $e->getMessage());
+            throw new PDOException("Error crediting wallet: " . $e->getMessage());
+        }
+    }
+
+    public function getBalance(string $walletId): ?float{
+        $query = "SELECT balance FROM wallets WHERE id = :id";
+ 
+        try {
+ 
+            $stmt = $this->db->prepare($query);
+            $stmt->bindValue(':id', $walletId);
+            $stmt->execute();
+            $balance = $stmt->fetchColumn();
+ 
+            return $balance === false ? null : (float) $balance;
+ 
+        } catch (PDOException $e) {
+            error_log("Error fetching wallet balance: " . $e->getMessage());
+            throw new PDOException("Error fetching wallet balance: " . $e->getMessage());
+        }
+    }
+
+    public function updateTransferStatus(string $tranferId, string $status): void{
+        $query = "UPDATE wallet_transfers SET status = :status WHERE id = :id";
+        
+        try{
+
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':id', $tranferId);
+            $stmt->bindParam(':status', $status);
+            $stmt->execute();
+
+        }catch(PDOException $e){
+            error_log("Error updating tranfer status: " . $e->getMessage());
+            throw new PDOException ("Error updating tranfer status: " . $e->getMessage());
+        }
+
+    }
 
 }

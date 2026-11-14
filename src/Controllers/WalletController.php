@@ -156,6 +156,55 @@ class WalletController{
 
     }
 
+    public function fundWallet(){
+        try {
+
+            $userId = $_SESSION['user_id'] ?? '';
+            if(!$userId){
+                UtilityHelper::sendJson('error', "Session expired, Please login", 403);
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            $senderWalletId = $data['sender_wallet_id'] ?? '';
+            $beneficiaryWalletId = $data['beneficiary_wallet_id'] ?? '';
+            $amount = $data['amount'] ?? '';
+            $source = $data['funding_source'] ?? '';
+            $pin  = trim($data['pin'] ?? '');
+
+            if(!$source){
+                UtilityHelper::sendJson('error', "Please select source wallet", 400);
+                return;
+            }
+
+            if($senderWalletId === '' || $beneficiaryWalletId === ''){
+                UtilityHelper::sendJson('error', "Unable to get wallet id", 401);
+                return;
+            }
+
+            if($amount === ''){
+                UtilityHelper::sendJson('error', "Field $amount must not be empty", 400);
+                return;
+            }
+
+            if($pin === ''){
+                UtilityHelper::sendJson('error', "Enter your wallet transfer pin", 400);
+                return;
+            }
+
+            $fundWallet = $this->walletService->fundWallet($userId, $senderWalletId, $beneficiaryWalletId, $source, $amount, $pin);
+            if($fundWallet === null){
+                UtilityHelper::sendJson('error', "Unable to fund wallet", 403);
+            }
+
+            UtilityHelper::sendJson('success', "Wallet $beneficiaryWalletId has been funded successfully", 201);
+            
+        } catch (Throwable $e) {
+            error_log("Error fund wallet validation: " . $e->getMessage());
+            UtilityHelper::sendJson('error', "An error occurred, Try again in 5min", 500);
+        }
+    }
+
+
 
 
 }
