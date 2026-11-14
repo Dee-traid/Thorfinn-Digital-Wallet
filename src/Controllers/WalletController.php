@@ -78,5 +78,41 @@ class WalletController{
         }
     }
 
+    public function updateWallet(){
+        try{
+
+            $userId = $_SESSION['user_id'] ?? null;
+            if(!$userId){
+                UtilityHelper::sendJson('error', "Please Login", 401);
+                return;
+            }
+            
+            $data = json_decode(file_get_contents('php://input'), true);
+            $walletName = trim(strtoUpper($data['wallet_name'] ?? ''));
+            $walletId = $data['id'] ?? null;
+
+            if ($walletName === '') {
+                UtilityHelper::sendJson('error', 'Enter your new wallet name', 400);
+                return;
+            }
+
+            if(!$walletId){
+                UtilityHelper::sendJson('error', "Invalid wallet ID", 400);
+                return;
+            }
+
+           $walletUpdate =  $this->walletService->updateWalletName($userId, $walletId, $walletName);
+           if(!$walletUpdate){
+            UtilityHelper::sendJson('error', "Error updating Wallet", 500);
+           }
+
+           UtilityHelper::sendJson('success', "Wallet name updated successfully", 200);
+
+        }catch(Throwable $e){
+            error_log("Wallet name update Validation error: " . $e->getMessage());
+            UtilityHelper::sendJson('error', "Error updating wallet", 500);
+        }
+    }
+
 
 }
