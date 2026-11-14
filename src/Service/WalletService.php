@@ -374,6 +374,141 @@ class WalletService{
         }   
     }
 
+    public function getRecentTransactions(string $userId, string $walletId){
+        try {
+ 
+             $wallet = $this->walletRepository->findWalletByIDAndUserID($walletId, $userId);
+             if($walletId === null || !$wallet){
+                 UtilityHelper::sendJson('error', "Wallet not found", 404);
+                 return;
+             }
+ 
+             $transactions = $this->walletRepository->getRecentTransactions($userId, $walletId);
+             foreach ($transactions as &$transaction) {
+                 $transaction['amount'] = (float) $transaction['amount'];
+             }
+ 
+             return $transactions;
+ 
+        } catch (Throwable $e) {
+             error_log("Error fetching transaction of $walletId: " . $e->getMessage());
+             UtilityHelper::sendJson('error', 'Could not load transactions', 500);
+        }
+     }
+ 
+     public function walletInternalTransfer(string $transferMode, string $userId, string $senderWalletId, string $beneficiaryWalletId, float $amount, string $pin){
+         $senderId = $this->getOwnedWalletById($senderWalletId, $userId);
+         $senderBalance = $senderId->getBalance();
+         $beneficiaryId = $this->getOwnedWalletById($beneficiaryWalletId, $userId);
+         $beneficiaryBalance = $beneficiaryId->getBalance();
+         $narration = 'Inter-Wallet Transfer';
+ 
+        $user = $this->userRepository->findUserByID($userId);
+        if(!$user){
+            return UtilityHelper::SendJson('error', "User not found, Please login", 429);
+        }
+
+        if(!isset($pin) || !UtilityHelper::verifyValue($pin, $user->getWalletTransactionPinHash())){
+            return UtilityHelper::sendJson('error', "Incorrect wallet transfer pin", 403);
+        }
+
+        if($senderBalance === 0 || $amount > $senderBalance){
+            return UtilityHelper::sendJson('error', "Insufficient balance", 400);
+        }
+
+        if($amount <= 0){
+            return UtilityHelper::sendJson('error', "Funding amount should not be less than or equal to zero", 422);      
+        }
+
+        if($transferMode !== 'internal'){
+            return UtilityHelper::sendJson('error', "Invalid transfer mode selected", 400);
+        }
+
+        $transfer = $this->saveTransfer($senderWalletId, $beneficiaryWalletId, $amount, $narration);
+        return $this->internaltransfer($userId, $transfer, $senderBalance, $beneficiaryBalance);
+     }
+ 
+     private function internaltransfer(string $userId, WalletTransfer $transfer, string $senderBalance, string $beneficiaryBalance){
+         $now = new DateTimeImmutable();
+         $transferId = $transfer->getID();
+         $now = new DateTimeImmutable();
+         $transferId = $transfer->getID();
+         $senderWalletId = $transfer->getSenderWalletId();
+         $beneficiaryWalletId = $transfer->getBeneficiaryWalletId();
+         $amount = $transfer->getAmount();
+         $reference = $transfer->getTransferReference();
+         $narration = 'Internal Wallet-Transfer';
+ 
+         $senderBalanceAfter = $senderBalance - $amount;
+         $beneficiaryBalanceAfter = $beneficiaryBalance + $amount;
+ 
+         try {
+ 
+             $this->walletRepository->beginTransaction();
+ 
+             $debit = $this->walletRepository->debitWallet($senderWalletId, $userId, $amount, $now);
+             if(!$debit){
+                 UtilityHelper::sendJson('error', "Insuffcient funds", 422);
+             }
+ 
+             $credit = $this->walletRepository->creditWallet($beneficiaryWalletId, $userId, $amount, $now);
+             if(!$credit){
+                 UtilityHelper::sendJson('error', "Wallet not found", 422);
+             }
+ 
+             $senderTxnHistory = $this->recordTransactionHistory($senderWalletId, $senderBalance, $amount,  $senderBalanceAfter, 'debit', $reference . '-DR', $narration, $now);
+             $beneficiaryTxnHistory = $this->recordTransactionHistory($beneficiaryWalletId, $beneficiaryBalance, $amount, $beneficiaryBalanceAfter, 'credit', $reference . '-CR', $narration, $now);
+ 
+             $this->walletRepository->updateTransferStatus($transferId, 'successful');
+ 
+             $this->walletRepository->commit();
+ 
+             try {
+                $user = $this->userRepository->findUserByID($userId);
+                if ($user) {
+                    $senderWallet = $this->walletRepository->findWalletByIDAndUserID($senderWalletId, $userId);
+                    $beneficiaryWallet = $this->walletRepository->findWalletByIDAndUserID($beneficiaryWalletId, $userId);
+
+                    $senderWalletName = $senderWallet ? $senderWallet->getWalletName() : 'Sender Wallet';
+                    $beneficiaryWalletName = $beneficiaryWallet ? $beneficiaryWallet->getWalletName() : 'Beneficiary Wallet';
+
+                    $this->mailService->sendTransactionNotification(
+                        $user->getEmail(),
+                        $user->getFullName(),
+                        $amount,
+                        'debit',
+                        $senderWalletName,
+                        $reference . '-DR'
+                    );
+
+                    $this->mailService->sendTransactionNotification(
+                        $user->getEmail(),
+                        $user->getFullName(),
+                        $amount,
+                        'credit',
+                        $beneficiaryWalletName,
+                        $reference . '-CR'
+                    );
+                }
+            } catch (Throwable $e) {
+                error_log("Failed to send transaction notification email: " . $e->getMessage());
+            }
+             return [
+                 'transfer_id' => $transferId,
+                 'reference'=> $reference,
+                 'status' => 'successful',
+                 'sender_balance_after'=> $senderBalanceAfter,
+                 'beneficiary_balance_after' => $beneficiaryBalanceAfter,
+             ];
+ 
+         } catch (Throwable $e) {
+             $this->walletRepository->rollBack();
+             $this->markTransactionFailed($transferId);
+             error_log("Wallet internal transfer failed: " . $e->getMessage());
+             return UtilityHelper::sendJson('error', "Unable to complete", 500);
+         }
+     }
+ 
  
 
 }
