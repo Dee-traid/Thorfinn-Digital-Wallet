@@ -250,5 +250,52 @@ class WalletController{
     }
 
 
+    public function walletExternalTransfer(){
+        try {
+            
+            $userId = $_SESSION['user_id'];
+            if(!$userId){
+                UtilityHelper::sendJson('error', "User not found", 403);
+                return;
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            $transferMode = $data['type'] ?? '';
+            $senderWalletId = $data['from_wallet'] ?? '';
+            $recipientWalletTag = $data['recipient'] ?? '';
+            $amount = $data['amount'] ?? '';
+            $pin = $data['pin'] ?? '';
+
+            if($transferMode === null){
+                return UtilityHelper::sendJson('error', "Unable to get transfer mode", 401);
+            }
+
+            if($senderWalletId === $recipientWalletTag){
+                return UtilityHelper::sendJson('error', "Cannot transfer between same wallet.", 400);
+            }
+
+            if($amount === null){
+                return UtilityHelper::sendJson('error', "Enter a valid amount", 400);
+            }
+
+            if($pin === ''){
+                return UtilityHelper::sendJson('error', "Enter your wallet transfer pin", 400);
+            }
+
+            if($senderWalletId === '' || $recipientWalletTag === ''){
+                return UtilityHelper::sendJson('error', "Unable to get wallet id", 401);   
+            }
+
+            $internalTransfer = $this->walletService->walletExternalTransfer($transferMode, $userId, $senderWalletId, $recipientWalletTag, $amount, $pin);
+            
+           return UtilityHelper::sendJson('success', 'Transfer successfully completed', 200, ['data' => ['internalTransfer' => $internalTransfer]]);
+        } catch (Throwable $e) {
+            error_log("Error external transfer validation: " . $e->getMessage());
+            UtilityHelper::sendJson('error', "An error occurred Try again", 500);
+        }
+    }
+
+
+
 
 }
