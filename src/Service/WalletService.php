@@ -148,6 +148,48 @@ class WalletService{
         }
     }
 
+    public function deleteWallet(string $userId, string $walletId, string $walletPin){
+        
+        try{
+
+            $wallet = $this->walletRepository->findWalletByUserID($walletId, $userId);
+
+            if(!$wallet){
+                UtilityHelper::sendJson('error', "Wallet does not exist", 404);
+                return;
+            }
+    
+            $user = $this->userRepository->findUserByID($userId);
+            if (!$user || !UtilityHelper::verifyValue($walletPin, $user->getWalletTransactionPinHash())) {
+                UtilityHelper::sendJson('error', "Incorrect wallet pin, Try again", 404);
+                return; 
+            }
+
+            $balance = $wallet->getBalance();
+            if($balance > 0){
+                UtilityHelper::sendJson('error', "Cannot delete wallet, Account is still funded", 400);
+                return;
+            }
+            
+            $deletedWallet = $this->walletRepository->deleteWallet($userId, $walletId);
+            if(!$deletedWallet){
+              return false;  
+            }
+
+            try {
+                $this->mailService->deleteWallet($user->getEmail(), $user->getFullName(), $wallet->getWalletName());
+            } catch (Throwable $e) {
+                error_log("Failed to send wallet deletion email: " . $e->getMessage());
+            }
+
+            return $deletedWallet;
+    
+        }catch(Throwable $e){
+            error_log('Wallet service deletion error: ' . $e->getMessage());
+            UtilityHelper::sendJson('error', "An error occurred, Please try again", 500);
+        }
+
+    }
  
 
 }

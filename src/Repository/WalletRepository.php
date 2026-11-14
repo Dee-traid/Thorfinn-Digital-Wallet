@@ -209,6 +209,28 @@ class WalletRepository{
         }
     }
 
+    public function deleteWallet(string $userId, string $walletId): bool{
+        $query = "DELETE FROM wallets WHERE user_id = :userId AND id = :id AND balance = 0 AND NOT EXISTS (SELECT 1 FROM wallet_transactions_history WHERE wallet_transactions_history.wallet_id = wallets.id)";
+
+        try {
+
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':id', $walletId);
+            $stmt->bindParam(':userId', $userId);
+            $stmt->execute();
+            $deletedWallet = $stmt->rowCount() === 1;
+            if(!$deletedWallet){
+                return false;
+            }
+
+            return true;
+
+        } catch (PDOException $e) {
+            throw new PDOException("Error deleting wallet: " . $e->getMessage());
+        }
+    }
+
+
 
 
 }
