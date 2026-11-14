@@ -32,7 +32,7 @@ $userController = new UserController($userService);
 $walletTransferRepository = new WalletTransferRepository();
 $walletRepository = new WalletRepository();
 $mailService    = new MailService();
-$walletService = new WalletService($userRepository, $walletRepository, $mailService);
+$walletService = new WalletService($userRepository, $walletRepository, $walletTransferRepository, $mailService);
 $walletController = new WalletController($walletService);
 
 
