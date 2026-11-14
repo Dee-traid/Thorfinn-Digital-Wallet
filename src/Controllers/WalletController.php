@@ -119,5 +119,43 @@ class WalletController{
         }
     }
 
+    public function deleteWallet(){
+        try {
+            
+            $userId = $_SESSION['user_id'] ?? '';
+            if(!$userId){
+                UtilityHelper::sendJson('error', "Please Login", 401);
+                return;
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            $walletId = $data['id'] ?? '';
+            $walletPin = trim($data['pin'] ?? '');
+
+            if($walletId === ''){
+                UtilityHelper::sendJson('error', "Wallet not found", 400);
+                return;
+            }
+
+            if($walletPin === ''){
+                UtilityHelper::sendJson('error', "Enter your wallet transaction pin", 401);
+                return;
+            }
+
+            $deleted = $this->walletService->deleteWallet($userId, $walletId, $walletPin);
+            if(!$deleted){
+                UtilityHelper::sendJson('error', "Deletion failed. Wallet cannot be deleted (must have 0 balance and no transactions).", 403);
+                return;
+            }
+
+            UtilityHelper::sendJson('success', "Wallet ". $walletId . " deleted successfully", 201);
+        } catch (Throwable $e) {
+            error_log("Wallet deletion Validation error: " . $e->getMessage());
+            UtilityHelper::sendJson('error', "An error occurred while deleting  wallet", 500);
+        }
+
+    }
+
+
 
 }
