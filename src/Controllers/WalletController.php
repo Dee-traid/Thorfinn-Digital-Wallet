@@ -47,11 +47,6 @@ class WalletController{
                 return;
             }
 
-            if(strlen($walletName) <= 2){
-                UtilityHelper::sendJson('error', 'Enter a valid wallet name', 400);
-                return;
-            }
-
             $attempt = 0;
             $maxAttempts = 5;
             do{
@@ -133,22 +128,22 @@ class WalletController{
             $walletPin = trim($data['pin'] ?? '');
 
             if($walletId === ''){
-                UtilityHelper::sendJson('error', "Wallet not found", 400);
+                UtilityHelper::sendJson('error', "Wallet id is required", 400);
                 return;
             }
 
             if($walletPin === ''){
-                UtilityHelper::sendJson('error', "Enter your wallet transaction pin", 401);
+                UtilityHelper::sendJson('error', "Enter your wallet transaction pin", 400);
                 return;
             }
 
             $deleted = $this->walletService->deleteWallet($userId, $walletId, $walletPin);
             if(!$deleted){
-                UtilityHelper::sendJson('error', "Deletion failed. Wallet cannot be deleted (must have 0 balance and no transactions).", 403);
+                UtilityHelper::sendJson('error', "Wallet cannot be deleted because it has transaction history", 409);
                 return;
             }
 
-            UtilityHelper::sendJson('success', "Wallet ". $walletId . " deleted successfully", 201);
+            UtilityHelper::sendJson('success', "Wallet ". $walletId . " deleted successfully", 200);
         } catch (Throwable $e) {
             error_log("Wallet deletion Validation error: " . $e->getMessage());
             UtilityHelper::sendJson('error', "An error occurred while deleting  wallet", 500);
@@ -161,7 +156,7 @@ class WalletController{
 
             $userId = $_SESSION['user_id'] ?? '';
             if(!$userId){
-                UtilityHelper::sendJson('error', "Session expired, Please login", 403);
+                UtilityHelper::sendJson('error', "Session expired, Please login", 401);
             }
 
             $data = json_decode(file_get_contents('php://input'), true);
@@ -172,17 +167,17 @@ class WalletController{
             $pin  = trim($data['pin'] ?? '');
 
             if(!$source){
-                UtilityHelper::sendJson('error', "Please select source wallet", 400);
+                UtilityHelper::sendJson('error', "Select a funding source", 400);
                 return;
             }
 
             if($senderWalletId === '' || $beneficiaryWalletId === ''){
-                UtilityHelper::sendJson('error', "Unable to get wallet id", 401);
+                UtilityHelper::sendJson('error', "Sender and beneficiary wallet ids are required", 400);
                 return;
             }
 
             if($amount === ''){
-                UtilityHelper::sendJson('error', "Field $amount must not be empty", 400);
+                UtilityHelper::sendJson('error', "Amount is required", 400);
                 return;
             }
 
@@ -193,14 +188,31 @@ class WalletController{
 
             $fundWallet = $this->walletService->fundWallet($userId, $senderWalletId, $beneficiaryWalletId, $source, $amount, $pin);
             if($fundWallet === null){
-                UtilityHelper::sendJson('error', "Unable to fund wallet", 403);
+                UtilityHelper::sendJson('error', "Unable to fund wallet", 500);
             }
 
-            UtilityHelper::sendJson('success', "Wallet $beneficiaryWalletId has been funded successfully", 201);
+            UtilityHelper::sendJson('success', "Wallet $beneficiaryWalletId has been funded successfully", 200);
             
         } catch (Throwable $e) {
             error_log("Error fund wallet validation: " . $e->getMessage());
             UtilityHelper::sendJson('error', "An error occurred, Try again in 5min", 500);
+        }
+    }
+
+    public function recentTransactions(){
+        $userId = $_SESSION['user_id'] ?? null;
+        if (!$userId) {
+            UtilityHelper::sendJson('error', 'Please login', 401);
+        }
+
+        $walletId =  trim($_GET['wallet_id'] ?? '') ?: null;
+
+        try {
+            $transactions = $this->walletService->getRecentTransactions($userId, $walletId);
+            UtilityHelper::sendJson('success', 'OK', 200, ['data' => ['transactions' => $transactions]]);
+        } catch (Throwable $e) {
+            error_log("Error fetching recent transaction: " . $e->getMessage());
+            UtilityHelper::sendJson('error', 'Could not load transactions', 500);
         }
     }
 
@@ -210,7 +222,7 @@ class WalletController{
             
             $userId = $_SESSION['user_id'];
             if(!$userId){
-                UtilityHelper::sendJson('error', "User not found", 403);
+                UtilityHelper::sendJson('error', "Please login", 401);
                 return;
             }
 
@@ -222,7 +234,7 @@ class WalletController{
             $pin = $data['pin'] ?? '';
 
             if($transferMode === null){
-                return UtilityHelper::sendJson('error', "Unable to get transfer mode", 401);
+                return UtilityHelper::sendJson('error', "Unable to get transfer mode", 400);
             }
 
             if($senderWalletId === $beneficiaryWalletId){
@@ -238,7 +250,7 @@ class WalletController{
             }
 
             if($senderWalletId === '' || $beneficiaryWalletId === ''){
-                return UtilityHelper::sendJson('error', "Unable to get wallet id", 401);   
+                return UtilityHelper::sendJson('error', "Sender and beneficiary wallet ids are required", 400);   
             }
 
             $internalTransfer = $this->walletService->walletInternalTransfer($transferMode, $userId, $senderWalletId, $beneficiaryWalletId, $amount, $pin);
@@ -249,13 +261,12 @@ class WalletController{
         }
     }
 
-
     public function walletExternalTransfer(){
         try {
             
             $userId = $_SESSION['user_id'];
             if(!$userId){
-                UtilityHelper::sendJson('error', "User not found", 403);
+                UtilityHelper::sendJson('error', "Please login", 401);
                 return;
             }
 
@@ -267,7 +278,7 @@ class WalletController{
             $pin = $data['pin'] ?? '';
 
             if($transferMode === null){
-                return UtilityHelper::sendJson('error', "Unable to get transfer mode", 401);
+                return UtilityHelper::sendJson('error', "Unable to get transfer mode", 400);
             }
 
             if($senderWalletId === $recipientWalletTag){
@@ -283,7 +294,7 @@ class WalletController{
             }
 
             if($senderWalletId === '' || $recipientWalletTag === ''){
-                return UtilityHelper::sendJson('error', "Unable to get wallet id", 401);   
+                return UtilityHelper::sendJson('error', "Sender wallet id and recipient tag are required", 400);   
             }
 
             $internalTransfer = $this->walletService->walletExternalTransfer($transferMode, $userId, $senderWalletId, $recipientWalletTag, $amount, $pin);
@@ -294,7 +305,6 @@ class WalletController{
             UtilityHelper::sendJson('error', "An error occurred Try again", 500);
         }
     }
-
 
 
 
