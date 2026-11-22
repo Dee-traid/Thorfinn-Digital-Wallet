@@ -45,28 +45,9 @@ class UserService{
        
     }
 
-    private function getValidTokenRecord(string $tokenHash){
-        $record = $this->userRepository->findVerificationToken($tokenHash);
-        $timeStamp = new DateTimeImmutable();
-
-        if ($record === null) {
-            UtilityHelper::sendJson('error', "Invalid or expired token", 400, ['errors' => ['token' => 'Invalid or expired token']]);
-            return;
-        }
-
-        if ($timeStamp > new DateTimeImmutable($record['expires_at'])) {
-            UtilityHelper::sendJson('error', "Token verification expired, kindly request a new token/link", 400, ['errors' => ['token' => 'Token has expired']]);
-            return;
-        }
-
-        return $record;
-    }
-
-
     public function verifyEmail(string $token): void{
 
         try {
-            
             $record = $this->userRepository->findTokenVerification(hash('sha256', $token));
             $timeStamp = new DateTimeImmutable();
             if($record === null){
@@ -92,11 +73,11 @@ class UserService{
             $user = $this->userRepository->findUserByEmail($email);
             if($user === null && !$user->getEmailVerified()){
                 $this->sendEmailVerification($user);
-                UtilityHelper::sendJson('success', "If the account exists, a verification link has been sent", 200);
+                UtilityHelper::sendJson('success', "Account with $user does not exist", 200);
             }
 
         } catch (Throwable $e) {
-            error_log("Resend verification error:" . $e->getMessage());
+            error_log("Resend verification error:" . $e->getMessage);
             UtilityHelper::sendJson('error', "An error occurred", 500);
         }
     }
@@ -127,7 +108,6 @@ class UserService{
             );
 
             $this->userRepository->createUser($user);
-            $this->mailService->registrationSuccess($email, $fullName);
 
             try {
                 $this->sendEmailVerification($user);
@@ -185,7 +165,7 @@ class UserService{
 
             if(!$user->getEmailVerified()){
                 $this->resendEmailVerification($email);
-                UtilityHelper::sendJson('error', 'Email not verified. A new verification link has been sent.', 403);
+                UtilityHelper::sendJson('success', 'A verification link has been sent to your account to verify your wallet account', 200);
             }
 
              if($user && UtilityHelper::verifyValue($password, $user->getPasswordHash())){
@@ -195,12 +175,11 @@ class UserService{
                 $user = $this->userRepository->findUserByEmail($email);
                 $email = $user->getEmail();
                 $userId = $user->getID();
-                $purpose = 'Login';
                 $fullName = $user->getFullName();
                 $createdAt = new DateTimeImmutable();
                 $expiresAt = new DateTimeImmutable('+ 2min');
     
-                $this->userRepository->saveToken($userId, $email, $tokenHash, $purpose, $createdAt, $expiresAt);
+                $this->userRepository->saveToken($userId, $email, $tokenHash, $createdAt, $expiresAt);
                 $emailToken = $this->mailService->loginToken($email,  $fullName, $token);
 
                 $loginAttempts = $this->userRepository->deleteLoginAttempts($email);
@@ -211,11 +190,11 @@ class UserService{
                 ]);
 
             }
-             UtilityHelper::sendJson('error', "Incorrect email or password", 401);
+             UtilityHelper::sendJson('error', "Incorrect email or password", 400);
            
         }catch (Throwable $e) {
             error_log('Login error: ' . $e->getMessage());
-            UtilityHelper::sendJson('error', 'Request not successful', 500);
+            UtilityHelper::sendJson('error', 'An error occurred, Please try again.', 500);
         }
     
     }
@@ -225,14 +204,30 @@ class UserService{
 
             $user = $this->userRepository->findUserByEmail($email);
             if($user === null){
-
-                 UtilityHelper::sendJson('error', "User not found", 401);
+                 UtilityHelper::sendJson('error', "User not found", 404);
                  return;
             }
 
             $tokenHash = hash('sha256', $token);
-            $userId = $user->getID();
-            $record = $this->getValidTokenRecord($tokenHash);
+            $record = $this->userRepository->findVerificationToken($tokenHash);
+            if ($record === null) {
+                UtilityHelper::sendJson(
+                    'error',
+                    'Invalid or expired login code',
+                    400
+                );
+            }
+
+            $now = new DateTimeImmutable();
+            $expiresAt = new DateTimeImmutable($record['expires_at']);
+
+            if ($now >= $expiresAt) {
+                UtilityHelper::sendJson(
+                    'error',
+                    'Login code has expired. Please log in again.',
+                    400
+                );
+            }
 
             $user = $this->userRepository->findUserByEmail($email);
 
@@ -277,8 +272,6 @@ class UserService{
             session_regenerate_id(true);
             $_SESSION['user_id'] = $user->getID();
             $csrfToken = CSRF::regenerateCsrfToken();
-
-            $this->mailService->loginAlert($user->getEmail(), $user->getFullName(), $ip ?? 'Unknown');
             
             UtilityHelper::sendJson('success', 'Login successful', 200, [
                 'token' => $jwt,
@@ -303,25 +296,22 @@ class UserService{
 
             $user = $this->userRepository->findUserByEmail($email);
             if(!$user){
-                UtilityHelper::sendJson('success', 'If the email exists, a code has been sent', 200);
+                UtilityHelper::sendJson('error', "User not found", 400);
             }
             
             $token = $this->generateToken();
             $tokenHash = hash('sha256', $token);
             $createdAt = new DateTimeImmutable();
             $expiresAt = new DateTimeImmutable('+2 min');
-            $purpose = 'Password-Reset';
             $userId = $user->getID();
             $email = $user->getEmail();
             $fullName = $user->getFullName();
 
-            $this->userRepository->saveToken($userId, $email, $tokenHash, $purpose, $createdAt, $expiresAt);
+            $this->userRepository->saveToken($userId, $email, $tokenHash, $createdAt, $expiresAt);
 
             $tokenSent = $this->mailService->token($email, $fullName, $token);
              if($tokenSent === true){
                 UtilityHelper::sendJson('success', "Verification token has been sent to your email, Expires in 2min", 200);
-             }else{
-                UtilityHelper::sendJson('error', 'Unable to send code, try again', 500);
              }
 
        } catch (Throwable $e) {
@@ -334,7 +324,16 @@ class UserService{
       try {
 
             $tokenHash = hash('sha256', $token);
-            $record = $this->getValidTokenRecord($tokenHash);
+            $record = $this->userRepository->findVerificationToken($tokenHash);
+            $timeStamp = new DateTimeImmutable();
+
+            if($record === null){
+                UtilityHelper::sendJson('error', "Invalid or expired token", 400);
+            }
+
+            if($timeStamp > new DateTimeImmutable($record['expires_at'])){
+                UtilityHelper::sendJson('error', "Token expired, Kindly request for a new token", 400);
+            }
 
             UtilityHelper::sendJson('success', "Token verification successful", 200);
 
@@ -364,8 +363,6 @@ class UserService{
                 UtilityHelper::sendJson('error', "Could not update password, Try again", 500);
             }
 
-            $this->mailService->passwordResetSuccess($user->getEmail(), $user->getFullName());
-
             UtilityHelper::sendJson('success', "Password successfully updated", 200);
 
         } catch (Throwable $e) {
@@ -380,7 +377,7 @@ class UserService{
 
             $user = $this->userRepository->findUserByID($userId);
             if($user === null){
-                UtilityHelper::sendJson('error', "User not found, Please login", 401);
+                UtilityHelper::sendJson('error', "User not found, Please login", 429);
                 return;
             }
 
@@ -482,5 +479,6 @@ class UserService{
     }
 
 
-}
 
+
+}
