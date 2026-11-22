@@ -167,6 +167,73 @@
     button.disabled = isLoading;
   }
 
+  /* ---------- Global Loader & Verification Handling ---------- */
+  window.ThorfinnLoader = {
+    show: function(text) {
+      var loader = document.getElementById('thorfinn-loader');
+      var textEl = document.getElementById('thorfinn-loader-text');
+      if (textEl && text) textEl.textContent = text;
+      if (loader) loader.classList.add('is-active');
+    },
+    hide: function() {
+      var loader = document.getElementById('thorfinn-loader');
+      if (loader) loader.classList.remove('is-active');
+    }
+  };
+
+  window.addEventListener('beforeunload', function() {
+    window.ThorfinnLoader.show('Setting sail...');
+  });
+
+  function showTransactionStatus(isSuccess, title, message, onComplete) {
+    var overlay = document.getElementById('tx-status-overlay');
+    var iconWrap = document.getElementById('tx-status-icon-wrap');
+    var titleEl = document.getElementById('tx-status-title');
+    var msgEl = document.getElementById('tx-status-message');
+    var actionBtn = document.getElementById('tx-status-action');
+
+    if (!overlay) {
+      if (onComplete) onComplete();
+      return;
+    }
+
+    iconWrap.className = 'tx-status-icon ' + (isSuccess ? 'success' : 'failed');
+    iconWrap.innerHTML = isSuccess 
+      ? '<svg viewBox="0 0 24 24" width="28" height="28"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>'
+      : '<svg viewBox="0 0 24 24" width="28" height="28"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
+
+    titleEl.textContent = title || (isSuccess ? 'Success' : 'Notice');
+    msgEl.textContent = message || '';
+    
+    overlay.hidden = false;
+    overlay.classList.add('is-active');
+
+    var dismiss = function() {
+      overlay.classList.remove('is-active');
+      setTimeout(function() { overlay.hidden = true; }, 300);
+      if (onComplete) onComplete();
+    };
+
+    actionBtn.onclick = dismiss;
+    setTimeout(dismiss, 30000);
+  }
+
+  // Intercept incoming JSON messages on web page for successful email verification and route back to login
+  function handleEmailVerificationResponse(data) {
+    window.ThorfinnLoader.show('Processing verification...');
+    setTimeout(function() {
+      window.ThorfinnLoader.hide();
+      showTransactionStatus(
+        data.status === 'success',
+        data.status === 'success' ? 'Email Verified' : 'Verification Status',
+        data.message || 'Routing back to sign in...',
+        function() {
+          window.location.href = 'auth.html?view=login';
+        }
+      );
+    }, 30000);
+  }
+
 /* ---------- Login ---------- */
   var API = '/src/Router/Router.php';   
   var csrfToken = null;
@@ -177,7 +244,11 @@
   function parseJsonSafe(res) {
     return res.text().then(function (text) {
       try {
-        return { httpStatus: res.status, data: JSON.parse(text) };
+        var json = JSON.parse(text);
+        if (json && (json.action === 'verify-email' || /verified/i.test(json.message || ''))) {
+          handleEmailVerificationResponse(json);
+        }
+        return { httpStatus: res.status, data: json };
       } catch (e) {
         console.error('Non-JSON response from', res.url, '\n', text.slice(0, 300));
         throw new Error('Server did not return JSON');
@@ -618,7 +689,7 @@ var forgotForm = document.getElementById('form-forgot');
             successHeading: 'Password updated',
             successSub: 'Routing to login\u2026'
           });
-          redirectTimer = setTimeout(function () { showView('login'); }, 2200);
+          redirectTimer = setTimeout(function () { showView('login'); }, 30000);
           return;
         }
 
@@ -631,5 +702,61 @@ var forgotForm = document.getElementById('form-forgot');
   });
 
   document.getElementById('reset-confirm').addEventListener('input', function () { clearFieldState('reset-confirm'); });
+
+  /* ---------- Email verification link ---------- */
+
+  function verifyEmailToken(token) {
+    window.ThorfinnLoader.show('Verifying your email...');
+
+    var url = API + '?action=verify-email&token=' + encodeURIComponent(token);
+
+    fetch(url, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    })
+      .then(function (response) {
+        return response.text().then(function (text) {
+          var body = null;
+          try { body = JSON.parse(text); } catch (e) {}
+          var ok = response.ok && body &&
+            body.success !== false &&
+            (body.status === undefined || body.status === 'success');
+          return { ok: !!ok, body: body };
+        });
+      })
+      .then(function (res) {
+        window.ThorfinnLoader.hide();
+        var title = res.ok ? 'Email Verified Successfully! 🎉' : 'Verification Failed';
+        var message = (res.body && res.body.message) ||
+          (res.ok ? 'Your account is now fully active. You can log in.'
+                  : 'This verification link is invalid or has expired.');
+        renderVerificationCard(res.ok, title, message);
+      })
+      .catch(function () {
+        window.ThorfinnLoader.hide();
+        renderVerificationCard(false, 'Connection Error', 'Could not reach the server. Please check your network connection.');
+      });
+  }
+
+  function renderVerificationCard(isSuccess, title, message) {
+    var actionBtn = document.getElementById('tx-status-action');
+    if (actionBtn) actionBtn.textContent = 'Continue to Login';
+
+    showTransactionStatus(isSuccess, title, message, function () {
+      showView('login');
+    });
+  }
+
+  (function checkVerificationLink() {
+    var params = new URLSearchParams(window.location.search);
+    var token = params.get('token');
+    if (params.get('action') !== 'verify-email' || !token) return;
+    var clean = new URL(window.location.href);
+    clean.searchParams.delete('action');
+    clean.searchParams.delete('token');
+    window.history.replaceState({}, '', clean);
+
+    verifyEmailToken(token);
+  })();
 
 })();

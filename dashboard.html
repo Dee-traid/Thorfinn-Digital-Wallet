@@ -354,6 +354,34 @@
   </div>
 </div>
 
+
+<!-- GLOBAL LOADER & STATUS OVERLAY -->
+<div id="thorfinn-loader" class="thorfinn-loader-overlay">
+  <div class="thorfinn-loader-compass">
+    <div class="thorfinn-loader-ring"></div>
+    <div class="thorfinn-loader-ring"></div>
+    <div class="thorfinn-loader-core">
+      <svg viewBox="0 0 32 32" width="28" height="28">
+        <path d="M16 4 L23 16 L16 28 L9 16 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+        <circle cx="16" cy="16" r="3" fill="currentColor"/>
+      </svg>
+    </div>
+  </div>
+  <p id="thorfinn-loader-text" class="thorfinn-loader-text">Navigating...</p>
+</div>
+
+<!-- TRANSACTION STATUS MODAL OVERLAY -->
+<div id="tx-status-overlay" class="thorfinn-loader-overlay" hidden>
+  <div class="tx-status-card">
+    <div id="tx-status-icon-wrap" class="tx-status-icon success">
+      <!-- Icon injected dynamically -->
+    </div>
+    <h2 id="tx-status-title">Transaction Successful</h2>
+    <p id="tx-status-message">Your recipient wallet should be credited in 30sec.</p>
+    <button type="button" class="btn btn-primary btn-block" id="tx-status-action">Return to Dashboard</button>
+  </div>
+</div>
+
 <script src="public/js/dashboard.js"></script>
 </body>
 </html>
